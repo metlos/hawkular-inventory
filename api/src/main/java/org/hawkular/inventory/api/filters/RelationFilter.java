@@ -16,6 +16,8 @@
  */
 package org.hawkular.inventory.api.filters;
 
+import org.hawkular.inventory.api.Relationships;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +43,7 @@ import java.util.List;
  * @author Jirka Kremser
  * @since 1.0
  */
-public class RelationFilter extends Filter {
+public abstract class RelationFilter extends Filter {
     private static final RelationFilter[] EMPTY = new RelationFilter[0];
 
     public static Accumulator by(RelationFilter... filters) {

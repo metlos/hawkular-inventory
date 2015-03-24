@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.filters;
 
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.EntityVisitor;
 import org.hawkular.inventory.api.model.Environment;
@@ -53,6 +54,22 @@ public abstract class Filter {
 
     public static Accumulator by(Filter... filters) {
         return new Accumulator(filters);
+    }
+
+    public static Accumulator byTypeAndId(Class<? extends Entity> type, String id) {
+        return new Accumulator(With.type(type), With.id(id));
+    }
+
+    public static Accumulator byType(Class<? extends Entity> type) {
+        return new Accumulator(With.type(type));
+    }
+
+    public static Accumulator relatedBy(String name) {
+        return new Accumulator(Related.by(name));
+    }
+
+    public static Accumulator relatedBy(Relationships.WellKnown name) {
+        return relatedBy(name.name());
     }
 
     public static Filter[] all() {
@@ -124,6 +141,14 @@ public abstract class Filter {
         public Accumulator and(Filter... fs) {
             Collections.addAll(filters, fs);
             return this;
+        }
+
+        public Accumulator andType(Class<? extends Entity> type) {
+            return and(With.type(type));
+        }
+
+        public Accumulator andId(String id) {
+            return and(With.id(id));
         }
 
         public Filter[] get() {

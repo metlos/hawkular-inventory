@@ -14,17 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.hawkular.inventory.api;
+package org.hawkular.inventory.api.observable;
 
 /**
- * Base interface of all browser interfaces over a single entity that can have relations.
- *
- * @param <Entity> the type of the entity being browsed
- *
  * @author Lukas Krejci
- * @author Jirka Kremser
- * @since 1.0
+ * @since 0.0.1
  */
-interface SingleRelatableEntityBrowser<Entity> extends ResolvableToSingle<Entity>, Relatable<Relationships.ReadWrite> {
+public interface Observer {
+
+    <C> void onSuccess(Observable observable, Observable.Action<C> action, C actionContext);
+
+    <C> void onFailure(Throwable error, Observable observable, Observable.Action<C> action, C actionContext);
 }

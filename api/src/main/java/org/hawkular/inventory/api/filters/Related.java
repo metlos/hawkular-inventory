@@ -187,4 +187,30 @@ public class Related<T extends Entity> extends Filter {
         return getClass().getSimpleName() + "[" + (entity != null ? "entity=" + String.valueOf(entity) : "")
                 + ", rel='" + relationshipName + "', role=" + entityRole.name() + "]";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Related related = (Related) o;
+
+        if (entity != null ? !entity.equals(related.entity) : related.entity != null) return false;
+        if (entityRole != related.entityRole) return false;
+        if (relationshipId != null ? !relationshipId.equals(related.relationshipId) : related.relationshipId != null)
+            return false;
+        if (relationshipName != null ? !relationshipName.equals(related.relationshipName) : related.relationshipName != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = entity != null ? entity.hashCode() : 0;
+        result = 31 * result + (relationshipName != null ? relationshipName.hashCode() : 0);
+        result = 31 * result + (relationshipId != null ? relationshipId.hashCode() : 0);
+        result = 31 * result + (entityRole != null ? entityRole.hashCode() : 0);
+        return result;
+    }
 }

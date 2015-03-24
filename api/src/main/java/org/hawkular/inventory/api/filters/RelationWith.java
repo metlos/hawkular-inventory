@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.filters;
 
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.model.Entity;
 
 import java.util.Arrays;
@@ -41,27 +42,24 @@ public final class RelationWith {
         return new Properties(property, value);
     }
 
-    @SafeVarargs
     public static Properties properties(String property, String... values) {
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException("there must be at least one value of the property");
         }
-        Properties properties = new Properties(property, values);
-        return properties;
+        return new Properties(property, values);
     }
 
-
     public static Properties name(String value) {
+        //TODO this ties the API to tinkerpop impl...
         return new Properties("label", value);
     }
 
-    @SafeVarargs
     public static Properties names(String... values) {
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException("there must be at least one value of the relation name");
         }
-        Properties names = new Properties("label", values);
-        return names;
+        //TODO this ties the API to tinkerpop impl...
+        return new Properties("label", values);
     }
 
     @SafeVarargs
@@ -82,6 +80,10 @@ public final class RelationWith {
         return new TargetOfType(type);
     }
 
+    public static Direction direction(Relationships.Direction direction) {
+        return new Direction(direction);
+    }
+
     public static final class Ids extends RelationFilter {
 
         private final String[] ids;
@@ -97,6 +99,21 @@ public final class RelationWith {
         @Override
         public String toString() {
             return  "RelationshipIds" + Arrays.asList(ids).toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Ids other = (Ids) o;
+
+            return Arrays.equals(ids, other.ids);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(ids);
         }
     }
 
@@ -121,6 +138,26 @@ public final class RelationWith {
         @Override
         public String toString() {
             return  "RelationshipProperty: " + getProperty() + "=" + Arrays.asList(values).toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Properties that = (Properties) o;
+
+            if (!property.equals(that.property)) return false;
+            if (!Arrays.equals(values, that.values)) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = property.hashCode();
+            result = 31 * result + Arrays.hashCode(values);
+            return result;
         }
     }
 
@@ -153,6 +190,21 @@ public final class RelationWith {
             ret.append("]");
             return ret.toString();
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SourceOrTargetOfType that = (SourceOrTargetOfType) o;
+
+            return Arrays.equals(types, that.types);
+        }
+
+        @Override
+        public int hashCode() {
+            return types != null ? Arrays.hashCode(types) : 0;
+        }
     }
 
     public static final class SourceOfType extends SourceOrTargetOfType {
@@ -181,4 +233,23 @@ public final class RelationWith {
         }
     }
 
+    public static final class Direction extends RelationFilter {
+        private final Relationships.Direction direction;
+
+        public static Direction outgoing() {
+            return new Direction(Relationships.Direction.outgoing);
+        }
+
+        public static Direction incoming() {
+            return new Direction(Relationships.Direction.incoming);
+        }
+
+        public Direction(Relationships.Direction direction) {
+            this.direction = direction;
+        }
+
+        public Relationships.Direction getDirection() {
+            return direction;
+        }
+    }
 }
