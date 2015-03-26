@@ -77,6 +77,17 @@ public final class With {
         public int hashCode() {
             return Arrays.hashCode(ids);
         }
+
+        @Override
+        public Boolean isSupersetOf(Filter f) {
+            if (!(f instanceof Ids)) {
+                return null;
+            }
+
+            Ids other = (Ids) f;
+
+            return Arrays.asList(ids).containsAll(Arrays.asList(other.ids));
+        }
     }
 
     public static final class Types extends Filter {
@@ -119,6 +130,16 @@ public final class With {
         public int hashCode() {
             return Arrays.hashCode(types);
         }
-    }
 
+        @Override
+        public Boolean isSupersetOf(Filter f) {
+            if (!(f instanceof Types)) {
+                return null;
+            }
+
+            Types other = (Types) f;
+
+            return Arrays.asList(types).containsAll(Arrays.asList(other.types));
+        }
+    }
 }

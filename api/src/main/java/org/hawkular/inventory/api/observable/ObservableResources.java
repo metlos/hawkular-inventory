@@ -41,8 +41,8 @@ public final class ObservableResources {
 
     public static final class Read extends Notifying<Resources.Read> implements Resources.Read {
 
-        Read(Resources.Read iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Read(Resources.Read iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -58,8 +58,8 @@ public final class ObservableResources {
 
     public static final class ReadWrite extends Notifying<Resources.ReadWrite> implements Resources.ReadWrite {
 
-        ReadWrite(Resources.ReadWrite iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        ReadWrite(Resources.ReadWrite iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -94,8 +94,8 @@ public final class ObservableResources {
 
     public static final class Single extends Notifying.Relatable.Single<Resources.Single> implements Resources.Single {
 
-        Single(Resources.Single iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Single(Resources.Single iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -112,8 +112,8 @@ public final class ObservableResources {
     public static final class Multiple extends Notifying.Relatable.Multiple<Resources.Multiple>
             implements Resources.Multiple {
 
-        Multiple(Resources.Multiple iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Multiple(Resources.Multiple iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override

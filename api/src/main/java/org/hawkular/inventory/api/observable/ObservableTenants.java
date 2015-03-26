@@ -42,8 +42,8 @@ public final class ObservableTenants {
 
     public static final class Read extends Notifying<Tenants.Read> implements Tenants.Read {
 
-        Read(Tenants.Read iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Read(Tenants.Read iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -60,9 +60,9 @@ public final class ObservableTenants {
 
     public static final class ReadWrite extends Notifying<Tenants.ReadWrite> implements Tenants.ReadWrite {
 
-        ReadWrite(Tenants.ReadWrite tenants, ObserverNotificationStrategy notificationStrategy,
+        ReadWrite(Tenants.ReadWrite tenants, NotificationContext notificationContext,
                           Filter[] path) {
-            super(tenants, notificationStrategy, path);
+            super(tenants, notificationContext, path);
         }
 
         @Override
@@ -98,8 +98,8 @@ public final class ObservableTenants {
     public static final class TenantsSingle extends Notifying.Relatable.Single<Tenants.Single>
             implements Tenants.Single {
 
-        TenantsSingle(Tenants.Single tenants, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(tenants, notificationStrategy, path);
+        TenantsSingle(Tenants.Single tenants, NotificationContext notificationContext, Filter[] path) {
+            super(tenants, notificationContext, path);
         }
 
         @Override
@@ -129,10 +129,10 @@ public final class ObservableTenants {
     public static final class TenantsMultiple extends Notifying.Relatable.Multiple<Tenants.Multiple>
             implements Tenants.Multiple {
 
-        TenantsMultiple(Tenants.Multiple tenants, ObserverNotificationStrategy notificationStrategy,
+        TenantsMultiple(Tenants.Multiple tenants, NotificationContext notificationContext,
             Filter[] path) {
 
-            super(tenants, notificationStrategy, path);
+            super(tenants, notificationContext, path);
         }
 
         @Override

@@ -42,8 +42,8 @@ public final class ObservableResourceTypes {
 
     public static final class Read extends Notifying<ResourceTypes.Read> implements ResourceTypes.Read {
 
-        Read(ResourceTypes.Read iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Read(ResourceTypes.Read iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -59,8 +59,8 @@ public final class ObservableResourceTypes {
 
     public static final class ReadWrite extends Notifying<ResourceTypes.ReadWrite> implements ResourceTypes.ReadWrite {
 
-        ReadWrite(ResourceTypes.ReadWrite iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        ReadWrite(ResourceTypes.ReadWrite iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -96,8 +96,8 @@ public final class ObservableResourceTypes {
     public static final class Single extends Notifying.Relatable.Single<ResourceTypes.Single>
             implements ResourceTypes.Single {
 
-        Single(ResourceTypes.Single iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Single(ResourceTypes.Single iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -119,8 +119,8 @@ public final class ObservableResourceTypes {
     public static final class Multiple extends Notifying.Relatable.Multiple<ResourceTypes.Multiple>
         implements ResourceTypes.Multiple {
 
-        Multiple(ResourceTypes.Multiple iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Multiple(ResourceTypes.Multiple iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override

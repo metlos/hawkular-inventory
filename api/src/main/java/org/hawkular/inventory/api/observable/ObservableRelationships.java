@@ -48,9 +48,9 @@ public final class ObservableRelationships {
 
         private final Relationships.Direction direction;
 
-        ReadWrite(Relationships.ReadWrite iface, ObserverNotificationStrategy notificationStrategy,
+        ReadWrite(Relationships.ReadWrite iface, NotificationContext notificationContext,
                   Relationships.Direction direction, Filter... path) {
-            super(iface, notificationStrategy, path);
+            super(iface, notificationContext, path);
             this.direction = direction;
         }
 
@@ -108,9 +108,9 @@ public final class ObservableRelationships {
 
         private final Relationships.Direction direction;
 
-        Read(Relationships.Read iface, ObserverNotificationStrategy notificationStrategy,
+        Read(Relationships.Read iface, NotificationContext notificationContext,
                   Relationships.Direction direction, Filter[] path) {
-            super(iface, notificationStrategy, path);
+            super(iface, notificationContext, path);
             this.direction = direction;
         }
 
@@ -141,8 +141,8 @@ public final class ObservableRelationships {
 
     public static final class Single extends Notifying<Relationships.Single> implements Relationships.Single {
 
-        Single(Relationships.Single iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Single(Relationships.Single iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -152,8 +152,8 @@ public final class ObservableRelationships {
     }
 
     public static final class Multiple extends Notifying<Relationships.Multiple> implements Relationships.Multiple {
-        Multiple(Relationships.Multiple iface, ObserverNotificationStrategy notificationStrategy, Filter... path) {
-            super(iface, notificationStrategy, path);
+        Multiple(Relationships.Multiple iface, NotificationContext notificationContext, Filter... path) {
+            super(iface, notificationContext, path);
         }
 
         @Override

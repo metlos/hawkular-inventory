@@ -28,11 +28,12 @@ import org.hawkular.inventory.api.filters.Filter;
 public final class ObservableInventory implements Inventory {
 
     private final Inventory inventory;
-    private final ObserverNotificationStrategy notificationStrategy;
+    private final ObservableBase.NotificationContext notificationContext;
 
     public ObservableInventory(Inventory inventory, ObserverNotificationStrategy notificationStrategy) {
         this.inventory = inventory;
-        this.notificationStrategy = notificationStrategy;
+        this.notificationContext = new ObservableBase.NotificationContext(new SharedObserverStorage(),
+                notificationStrategy);
     }
 
     @Override
@@ -42,7 +43,7 @@ public final class ObservableInventory implements Inventory {
 
     @Override
     public Tenants.ReadWrite tenants() {
-        return new ObservableTenants.ReadWrite(inventory.tenants(), notificationStrategy, Filter.all());
+        return new ObservableTenants.ReadWrite(inventory.tenants(), notificationContext, Filter.all());
     }
 
     @Override

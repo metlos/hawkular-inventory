@@ -42,8 +42,8 @@ public final class ObservableMetricTypes {
 
     public static final class Read extends Notifying<MetricTypes.Read> implements MetricTypes.Read {
 
-        Read(MetricTypes.Read iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Read(MetricTypes.Read iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -59,8 +59,8 @@ public final class ObservableMetricTypes {
 
     public static final class ReadWrite extends Notifying<MetricTypes.ReadWrite> implements MetricTypes.ReadWrite {
 
-        ReadWrite(MetricTypes.ReadWrite iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        ReadWrite(MetricTypes.ReadWrite iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -95,8 +95,8 @@ public final class ObservableMetricTypes {
 
     public static final class ReadRelate extends Notifying<MetricTypes.ReadRelate> implements MetricTypes.ReadRelate {
 
-        ReadRelate(MetricTypes.ReadRelate iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        ReadRelate(MetricTypes.ReadRelate iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -129,8 +129,8 @@ public final class ObservableMetricTypes {
     public static final class Single extends Notifying.Relatable.Single<MetricTypes.Single>
             implements MetricTypes.Single {
 
-        Single(MetricTypes.Single iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Single(MetricTypes.Single iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -147,8 +147,8 @@ public final class ObservableMetricTypes {
     public static final class Multiple extends Notifying.Relatable.Multiple<MetricTypes.Multiple>
             implements MetricTypes.Multiple {
 
-        Multiple(MetricTypes.Multiple iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Multiple(MetricTypes.Multiple iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override

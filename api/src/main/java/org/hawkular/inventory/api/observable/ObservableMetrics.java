@@ -39,8 +39,8 @@ public final class ObservableMetrics {
 
     public static final class Read extends Notifying<Metrics.Read> implements Metrics.Read {
 
-        Read(Metrics.Read iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Read(Metrics.Read iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -56,8 +56,8 @@ public final class ObservableMetrics {
 
     public static final class ReadWrite extends Notifying<Metrics.ReadWrite> implements Metrics.ReadWrite {
 
-        ReadWrite(Metrics.ReadWrite iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        ReadWrite(Metrics.ReadWrite iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -92,8 +92,8 @@ public final class ObservableMetrics {
 
     public static final class ReadRelate extends Notifying<Metrics.ReadRelate> implements Metrics.ReadRelate {
 
-        ReadRelate(Metrics.ReadRelate iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        ReadRelate(Metrics.ReadRelate iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -125,8 +125,8 @@ public final class ObservableMetrics {
 
     public static final class Single extends Notifying.Relatable.Single<Metrics.Single> implements Metrics.Single {
 
-        Single(Metrics.Single iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Single(Metrics.Single iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -138,8 +138,8 @@ public final class ObservableMetrics {
     public static final class Multiple extends Notifying.Relatable.Multiple<Metrics.Multiple>
             implements Metrics.Multiple {
 
-        Multiple(Metrics.Multiple iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Multiple(Metrics.Multiple iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override

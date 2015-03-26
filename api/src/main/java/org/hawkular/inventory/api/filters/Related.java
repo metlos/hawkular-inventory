@@ -140,6 +140,9 @@ public class Related<T extends Entity> extends Filter {
     }
 
     protected Related(T entity, String relationshipName, String relationshipId, EntityRole entityRole) {
+        if (relationshipName == null && relationshipId == null) {
+            throw new IllegalArgumentException("Either relationshipName or relationshipId must be defined.");
+        }
         this.entity = entity;
         this.relationshipName = relationshipName;
         this.relationshipId = relationshipId;
@@ -148,6 +151,56 @@ public class Related<T extends Entity> extends Filter {
 
     protected Related(T entity, String relationshipName, EntityRole entityRole) {
         this(entity, relationshipName, null, entityRole);
+    }
+
+    @Override
+    public Boolean isSupersetOf(Filter f) {
+        if (!(f instanceof Related)) {
+            return null;
+        }
+
+        Related<?> other = (Related<?>) f;
+
+        //if this filter has the relationship ID, that it only can match itself
+        if (relationshipId != null && !relationshipId.equals(other.relationshipId)) {
+            return false;
+        }
+
+        //having a null relationship name and null id is not a legal combination...
+
+        //we're relating by name and other is relating by id... we cannot determine if we match...
+        if (other.relationshipName == null) {
+            return null;
+        }
+
+        if (!relationshipName.equals(other.relationshipName)) {
+            return false;
+        }
+
+        //direction ANY matches both source and target
+        switch (entityRole) {
+            case SOURCE:
+                if (other.entityRole == EntityRole.TARGET) {
+                    return false;
+                }
+                break;
+            case TARGET:
+                if (other.entityRole == EntityRole.SOURCE) {
+                    return false;
+                }
+                break;
+            default:
+                break;
+        }
+
+        //if entity == null, this filter matches any entity, so it's irrelevant what the other filter does
+        //otherwise the entities must match...
+        return entity == null || entity.equals(other.entity);
+    }
+
+    @Override
+    public boolean isPathTraversing() {
+        return true;
     }
 
     /**

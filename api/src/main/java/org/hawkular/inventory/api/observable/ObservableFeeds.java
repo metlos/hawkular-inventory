@@ -42,8 +42,8 @@ public final class ObservableFeeds {
             implements Feeds.ReadAndRegister {
 
 
-        ReadAndRegister(Feeds.ReadAndRegister iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        ReadAndRegister(Feeds.ReadAndRegister iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -65,8 +65,8 @@ public final class ObservableFeeds {
     }
 
     public static final class Read extends Notifying<Feeds.Read> implements Feeds.Read {
-        Read(Feeds.Read iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Read(Feeds.Read iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -83,8 +83,8 @@ public final class ObservableFeeds {
 
     public static final class Single extends Notifying.Relatable.Single<Feeds.Single> implements Feeds.Single {
 
-        Single(Feeds.Single iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Single(Feeds.Single iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -100,8 +100,8 @@ public final class ObservableFeeds {
 
     public static final class Multiple extends Notifying.Relatable.Multiple<Feeds.Multiple> implements Feeds.Multiple {
 
-        Multiple(Feeds.Multiple iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Multiple(Feeds.Multiple iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override

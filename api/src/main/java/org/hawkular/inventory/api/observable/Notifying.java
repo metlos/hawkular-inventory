@@ -29,25 +29,23 @@ import java.util.function.Function;
 */
 class Notifying<T> extends ObservableBase {
     protected final T iface;
-    protected final Filter[] path;
 
-    protected Notifying(T iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-        super(notificationStrategy);
+    protected Notifying(T iface, NotificationContext context, Filter[] path) {
+        super(context, path);
         this.iface = iface;
-        this.path = path;
     }
 
-    protected <I, R> R wrapCall(TriFunction<I, ObserverNotificationStrategy, Filter[], R> ctor, I iface,
+    protected <I, R> R wrapCall(TriFunction<I, NotificationContext, Filter[], R> ctor, I iface,
                                 Filter... pathExtension) {
-        return ctor.apply(iface, notificationStrategy, Filter.by(path).and(pathExtension).get());
+        return ctor.apply(iface, notificationContext, Filter.by(path).and(pathExtension).get());
     }
 
-    protected <I, P, R> R wrapCall(TetraFunction<I, ObserverNotificationStrategy, P, Filter[], R> ctor, I iface,
+    protected <I, P, R> R wrapCall(TetraFunction<I, NotificationContext, P, Filter[], R> ctor, I iface,
                                    P param, Filter... pathExtension) {
-        return ctor.apply(iface, notificationStrategy, param, Filter.by(path).and(pathExtension).get());
+        return ctor.apply(iface, notificationContext, param, Filter.by(path).and(pathExtension).get());
     }
     
-    protected <I, R, C> R wrapCallAndNotify(TriFunction<I, ObserverNotificationStrategy, Filter[], R> ctor, I iface,
+    protected <I, R, C> R wrapCallAndNotify(TriFunction<I, NotificationContext, Filter[], R> ctor, I iface,
                                          Action<C> action, Function<Filter[], C> contextProducer,
                                          Filter... pathExtension) {
         Filter[] newPath = Filter.by(path).and(pathExtension).get();
@@ -99,8 +97,8 @@ class Notifying<T> extends ObservableBase {
         public static abstract class Single<T extends org.hawkular.inventory.api.Relatable<Relationships.ReadWrite>>
                 extends Notifying<T> {
 
-            protected Single(T iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-                super(iface, notificationStrategy, path);
+            protected Single(T iface, NotificationContext notificationContext, Filter[] path) {
+                super(iface, notificationContext, path);
             }
 
             public Relationships.ReadWrite relationships() {
@@ -116,8 +114,8 @@ class Notifying<T> extends ObservableBase {
         public static abstract class Multiple<T extends org.hawkular.inventory.api.Relatable<Relationships.Read>>
                 extends Notifying<T> {
 
-            protected Multiple(T iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-                super(iface, notificationStrategy, path);
+            protected Multiple(T iface, NotificationContext notificationContext, Filter[] path) {
+                super(iface, notificationContext, path);
             }
 
             public Relationships.Read relationships() {

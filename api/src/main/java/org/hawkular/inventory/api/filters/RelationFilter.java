@@ -16,8 +16,6 @@
  */
 package org.hawkular.inventory.api.filters;
 
-import org.hawkular.inventory.api.Relationships;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

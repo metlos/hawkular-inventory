@@ -115,6 +115,17 @@ public final class RelationWith {
         public int hashCode() {
             return Arrays.hashCode(ids);
         }
+
+        @Override
+        public Boolean isSupersetOf(Filter f) {
+            if (!(f instanceof Ids)) {
+                return null;
+            }
+
+            Ids other = (Ids) f;
+
+            return Arrays.asList(ids).containsAll(Arrays.asList(other.ids));
+        }
     }
 
     public static final class Properties extends RelationFilter {
@@ -158,6 +169,21 @@ public final class RelationWith {
             int result = property.hashCode();
             result = 31 * result + Arrays.hashCode(values);
             return result;
+        }
+
+        @Override
+        public Boolean isSupersetOf(Filter f) {
+            if (!(f instanceof Properties)) {
+                return null;
+            }
+
+            Properties other = (Properties) f;
+
+            if (!property.equals(other.property)) {
+                return false;
+            }
+
+            return Arrays.asList(values).containsAll(Arrays.asList(other.values));
         }
     }
 
@@ -205,6 +231,21 @@ public final class RelationWith {
         public int hashCode() {
             return types != null ? Arrays.hashCode(types) : 0;
         }
+
+        @Override
+        public Boolean isSupersetOf(Filter f) {
+            if (this == f) {
+                return true;
+            }
+
+            if (!this.getClass().isAssignableFrom(f.getClass())) {
+                return null;
+            }
+
+            SourceOrTargetOfType other = (SourceOrTargetOfType) f;
+
+            return Arrays.asList(types).containsAll(Arrays.asList(other.types));
+        }
     }
 
     public static final class SourceOfType extends SourceOrTargetOfType {
@@ -250,6 +291,18 @@ public final class RelationWith {
 
         public Relationships.Direction getDirection() {
             return direction;
+        }
+
+        @Override
+        public Boolean isSupersetOf(Filter f) {
+            if (!(f instanceof Direction)) {
+                return null;
+            }
+
+            Direction other = (Direction) f;
+
+            return direction == other.direction;
+
         }
     }
 }

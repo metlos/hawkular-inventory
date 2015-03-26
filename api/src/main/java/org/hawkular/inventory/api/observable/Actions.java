@@ -31,6 +31,27 @@ public final class Actions {
 
     }
 
+    public static abstract class Base<T> implements Observable.Action<T> {
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+
+            if (obj == null) {
+                return false;
+            }
+
+            return this.getClass().equals(obj.getClass());
+        }
+
+        @Override
+        public int hashCode() {
+            return this.getClass().hashCode();
+        }
+
+    }
+
     public static final class PathContext<E> {
         private final Class<E> type;
         private final Filter[] path;
@@ -49,15 +70,10 @@ public final class Actions {
         }
     }
 
-    public static class ActionOnPath<E> implements Observable.Action<PathContext<E>> {
+    public static class ActionOnPath<E> extends Base<PathContext<E>> {
 
         private ActionOnPath() {
 
-        }
-
-        @Override
-        public Class<? extends PathContext<E>> getContextType() {
-            return PathContext.class;
         }
     }
 
@@ -70,12 +86,7 @@ public final class Actions {
     public static final class DeleteAction<E> extends ActionOnPath<E> {
     }
 
-    public static final class CopyAction implements Observable.Action<CopyAction.Environments> {
-
-        @Override
-        public Class<Environments> getContextType() {
-            return Environments.class;
-        }
+    public static final class CopyAction extends Base<CopyAction.Environments> {
 
         public static final class Environments {
             private final Filter[] sourceEnvironmentPath;
@@ -99,13 +110,9 @@ public final class Actions {
     public static final class RegisterAction extends ActionOnPath<Feed> {
     }
 
-    public static class LinkAction {
+    public static class LinkAction extends Base<LinkAction.RelationshipEnds> {
         private LinkAction() {
 
-        }
-
-        public Class<? extends RelationshipEnds> getContextType() {
-            return RelationshipEnds.class;
         }
 
         public static final class RelationshipEnds {
@@ -140,12 +147,9 @@ public final class Actions {
         }
     }
 
-    public static final class LinkedAction extends LinkAction
-            implements Observable.Action<LinkAction.RelationshipEnds> {
+    public static final class LinkedAction extends LinkAction {
     }
 
-    public static final class UnlinkedAction extends LinkAction
-            implements Observable.Action<LinkAction.RelationshipEnds> {
-
+    public static final class UnlinkedAction extends LinkAction {
     }
 }

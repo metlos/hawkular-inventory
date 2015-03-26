@@ -38,6 +38,9 @@ import java.util.List;
  * {@link With.Ids} and {@link With.Types}. There is also a sub-class of filters for the relation filtering {@link
  * RelationFilter}.
  *
+ * <p>In addition to being used to filter a result set, a list of filters can also be used as a specification of a path
+ * in an inventory graph. See {@link #isPathTraversing()} method for a more detailed discussion of the filters as paths.
+ *
  * To create these filters, feel free to use the static helper methods defined on {@link With}.
  * <p>
  * Note: Additional information for the library consumers.<br/>
@@ -51,6 +54,30 @@ import java.util.List;
  */
 public abstract class Filter {
     private static final Filter[] EMPTY = new Filter[0];
+
+    /**
+     * This defines a partial ordering over filters.
+     *
+     * @param f the filter to compare with this one
+     * @return true if this filter matches everything (and more) the provided filter does, false if this filter matches
+     * less than the provided filter, null if the two are not comparable (have different type, etc.).
+     */
+    public abstract Boolean isSupersetOf(Filter f);
+
+    /**
+     * In addition to filter a result set, filters are also used as path specifiers (a path to a node can be specified
+     * as a list of filters that express a graph traversal to the entity in question). When used as a path, it is
+     * important to distinguish between filters that merely filter the possible nodes on the position in the path
+     * from filters that specify a "hop" to the next position on the path.
+     *
+     * <p>Generally speaking, only the {@link Related} filter and its subclasses are traversing the path, all other
+     * filter types are pure filters even when used in a path.
+     *
+     * @return true if this type of filter is type traversing, false otherwise
+     */
+    public boolean isPathTraversing() {
+        return false;
+    }
 
     public static Accumulator by(Filter... filters) {
         return new Accumulator(filters);

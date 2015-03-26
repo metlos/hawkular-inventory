@@ -42,9 +42,8 @@ public final class ObservableEnvironments {
 
     public static final class ReadWrite extends Notifying<Environments.ReadWrite> implements Environments.ReadWrite {
 
-        ReadWrite(Environments.ReadWrite iface, ObserverNotificationStrategy notificationStrategy,
-                  Filter[] path) {
-            super(iface, notificationStrategy, path);
+        ReadWrite(Environments.ReadWrite iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -87,8 +86,8 @@ public final class ObservableEnvironments {
 
     public static final class Read extends Notifying<Environments.Read> implements Environments.Read {
 
-        Read(Environments.Read iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Read(Environments.Read iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -107,8 +106,8 @@ public final class ObservableEnvironments {
     public static final class Single extends Notifying.Relatable.Single<Environments.Single>
             implements Environments.Single {
 
-        Single(Environments.Single iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Single(Environments.Single iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override
@@ -135,8 +134,8 @@ public final class ObservableEnvironments {
     public static final class Multiple extends Notifying.Relatable.Multiple<Environments.Multiple>
             implements Environments.Multiple {
 
-        Multiple(Environments.Multiple iface, ObserverNotificationStrategy notificationStrategy, Filter[] path) {
-            super(iface, notificationStrategy, path);
+        Multiple(Environments.Multiple iface, NotificationContext notificationContext, Filter[] path) {
+            super(iface, notificationContext, path);
         }
 
         @Override

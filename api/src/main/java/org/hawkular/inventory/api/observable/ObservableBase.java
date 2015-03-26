@@ -16,9 +16,8 @@
  */
 package org.hawkular.inventory.api.observable;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import org.hawkular.inventory.api.filters.Filter;
+
 import java.util.Set;
 
 /**
@@ -29,44 +28,41 @@ import java.util.Set;
  */
 public abstract class ObservableBase implements Observable {
 
-    private Map<Action<?>, Set<Observer>> observerMap = new HashMap<>();
-    protected final ObserverNotificationStrategy notificationStrategy;
+    protected final NotificationContext notificationContext;
+    protected final Filter[] path;
 
-    protected ObservableBase(ObserverNotificationStrategy notificationStrategy) {
-        this.notificationStrategy = notificationStrategy;
+    protected ObservableBase(NotificationContext context, Filter[] path) {
+        this.notificationContext = context;
+        this.path = path;
     }
 
     @Override
     public <C> void subscribe(Observer observer, Action<C> action) {
-        Set<Observer> observers = observerMap.get(action);
-        if (observers == null) {
-            observers = new HashSet<>();
-            observerMap.put(action, observers);
-        }
-
-        observers.add(observer);
+        notificationContext.storage.addObserver(observer, action, path);
     }
 
     public <C> void unsubscribe(Observer observer, Action<C> action) {
-        Set<Observer> observers = observerMap.get(action);
-        if (observers == null) {
-            return;
-        }
-
-        observers.remove(observer);
+        notificationContext.storage.removeObserver(observer, action, path);
     }
 
     protected final <C> void notifyObservers(Throwable failure, Action<C> action, C actionContext) {
-        Set<Observer> observers = observerMap.get(action);
+        Set<Observer> observers = notificationContext.storage.getObservers(action, path);
+        observers.forEach((o) -> {
+            if (failure == null) {
+                notificationContext.strategy.notifySuccess(this, o, action, actionContext);
+            } else {
+                notificationContext.strategy.notifyFailure(this, o, failure, action, actionContext);
+            }
+        });
+    }
 
-        if (observers != null) {
-            observers.forEach((o) -> {
-                if (failure == null) {
-                    notificationStrategy.notifySuccess(this, o, action, actionContext);
-                } else {
-                    notificationStrategy.notifyFailure(this, o, failure, action, actionContext);
-                }
-            });
+    protected static class NotificationContext {
+        public final ObserverNotificationStrategy strategy;
+        public final SharedObserverStorage storage;
+
+        public NotificationContext(SharedObserverStorage storage, ObserverNotificationStrategy strategy) {
+            this.storage = storage;
+            this.strategy = strategy;
         }
     }
 }
