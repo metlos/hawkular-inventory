@@ -18,8 +18,9 @@ package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
-import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
+import org.hawkular.inventory.api.model.Tenant;
 
 /**
  * @author Lukas Krejci
@@ -28,11 +29,11 @@ import org.hawkular.inventory.api.filters.Filter;
 public final class ObservableInventory implements Inventory {
 
     private final Inventory inventory;
-    private final ObservableBase.NotificationContext notificationContext;
+    private final Notifying.NotificationContext notificationContext;
 
     public ObservableInventory(Inventory inventory, ObserverNotificationStrategy notificationStrategy) {
         this.inventory = inventory;
-        this.notificationContext = new ObservableBase.NotificationContext(new SharedObserverStorage(),
+        this.notificationContext = new Notifying.NotificationContext(new SharedObserverStorage(),
                 notificationStrategy);
     }
 
@@ -42,8 +43,9 @@ public final class ObservableInventory implements Inventory {
     }
 
     @Override
-    public Tenants.ReadWrite tenants() {
-        return new ObservableTenants.ReadWrite(inventory.tenants(), notificationContext, Filter.all());
+    public ObservableTenants.ReadWrite tenants() {
+        return new ObservableTenants.ReadWrite(inventory.tenants(), notificationContext,
+                Path.builder().add(Filter.byType(Tenant.class)).build());
     }
 
     @Override

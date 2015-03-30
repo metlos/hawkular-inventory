@@ -18,12 +18,15 @@ package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
+import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.observable.Notifying.NotificationContext;
 
 import java.util.Set;
 
@@ -40,74 +43,81 @@ public final class ObservableResourceTypes {
 
     }
 
-    public static final class Read extends Notifying<ResourceTypes.Read> implements ResourceTypes.Read {
+    public static final class Read
+            extends NotifyingWithDefaultObservables<ResourceTypes.Read, ResourceType>
+            implements ResourceTypes.Read {
 
-        Read(ResourceTypes.Read iface, NotificationContext notificationContext, Filter[] path) {
-            super(iface, notificationContext, path);
+        Read(ResourceTypes.Read iface, NotificationContext notificationContext, Path path) {
+            super(iface, ResourceType.class, notificationContext, path);
         }
 
         @Override
-        public ResourceTypes.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrapCall(Single::new, iface.get(id), Filter.byTypeAndId(ResourceType.class, id).get());
+        public ObservableResourceTypes.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return wrapCall(Single::new, iface.get(id), With.id(id));
         }
 
         @Override
-        public ResourceTypes.Multiple getAll(Filter... filters) {
-            return wrapCall(Multiple::new, iface.getAll(filters), Filter.byType(ResourceType.class).and(filters).get());
+        public ObservableResourceTypes.Multiple getAll(Filter... filters) {
+            return wrapCall(Multiple::new, iface.getAll(filters), filters);
         }
     }
 
-    public static final class ReadWrite extends Notifying<ResourceTypes.ReadWrite> implements ResourceTypes.ReadWrite {
+    public static final class ReadWrite
+            extends NotifyingWithDefaultObservables<ResourceTypes.ReadWrite, ResourceType>
+            implements ResourceTypes.ReadWrite {
 
-        ReadWrite(ResourceTypes.ReadWrite iface, NotificationContext notificationContext, Filter[] path) {
-            super(iface, notificationContext, path);
+        ReadWrite(ResourceTypes.ReadWrite iface, NotificationContext notificationContext, Path path) {
+            super(iface, ResourceType.class, notificationContext, path);
         }
 
         @Override
-        public ResourceTypes.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrapCall(Single::new, iface.get(id), Filter.byTypeAndId(ResourceType.class, id).get());
+        public ObservableResourceTypes.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return wrapCall(Single::new, iface.get(id), With.id(id));
         }
 
         @Override
-        public ResourceTypes.Multiple getAll(Filter... filters) {
-            return wrapCall(Multiple::new, iface.getAll(filters), Filter.byType(ResourceType.class).and(filters).get());
+        public ObservableResourceTypes.Multiple getAll(Filter... filters) {
+            return wrapCall(Multiple::new, iface.getAll(filters), filters);
         }
 
         @Override
-        public ResourceTypes.Single create(ResourceType.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return wrapCallAndNotify(Single::new, iface.create(blueprint), new Actions.CreateAction<>(),
-                    (fs) -> new Actions.PathContext<>(ResourceType.class, fs),
+        public ObservableResourceTypes.Single create(ResourceType.Blueprint blueprint) throws EntityAlreadyExistsException {
+            return wrapCallAndNotify(Single::new, () -> iface.create(blueprint), Action.CREATE,
+                    (fs, s) -> new Contexts.EntityPath<>(ResourceType.class, fs, s),
                     Filter.byTypeAndId(ResourceType.class, blueprint.getId()).get());
         }
 
         @Override
         public void update(ResourceType resourceType) throws EntityNotFoundException {
-            Actions.PathContext<ResourceType> ctx = new Actions.PathContext<>(ResourceType.class, path);
-            doAndNotify(iface::update, resourceType, new Actions.UpdateAction<>(), ctx);
+            Contexts.EntityPath<ResourceType> ctx = new Contexts.EntityPath<>(ResourceType.class, path, resourceType);
+            doAndNotify(iface::update, resourceType, Action.UPDATE, ctx);
         }
 
         @Override
         public void delete(String id) throws EntityNotFoundException {
-            Actions.PathContext<ResourceType> ctx = new Actions.PathContext<>(ResourceType.class, path);
-            doAndNotify(iface::delete, id, new Actions.UpdateAction<>(), ctx);
+            Contexts.EntityPath<ResourceType> ctx = new Contexts.EntityPath<>(ResourceType.class, path,
+                    get(id).entity());
+            doAndNotify(iface::delete, id, Action.UPDATE, ctx);
         }
     }
 
     public static final class Single extends Notifying.Relatable.Single<ResourceTypes.Single>
             implements ResourceTypes.Single {
 
-        Single(ResourceTypes.Single iface, NotificationContext notificationContext, Filter[] path) {
+        Single(ResourceTypes.Single iface, NotificationContext notificationContext, Path path) {
             super(iface, notificationContext, path);
         }
 
         @Override
-        public Resources.Read resources() {
-            return wrapCall(ObservableResources.Read::new, iface.resources(), Filter.relatedBy(defines).get());
+        public ObservableResources.Read resources() {
+            return wrapCall(ObservableResources.Read::new, iface.resources(), Filter.relatedBy(defines)
+                    .andType(Resource.class).get());
         }
 
         @Override
-        public MetricTypes.ReadRelate metricTypes() {
-            return wrapCall(ObservableMetricTypes.ReadRelate::new, iface.metricTypes(), Filter.relatedBy(owns).get());
+        public ObservableMetricTypes.ReadRelate metricTypes() {
+            return wrapCall(ObservableMetricTypes.ReadRelate::new, iface.metricTypes(), Filter.relatedBy(owns)
+                    .andType(MetricType.class).get());
         }
 
         @Override
@@ -119,18 +129,20 @@ public final class ObservableResourceTypes {
     public static final class Multiple extends Notifying.Relatable.Multiple<ResourceTypes.Multiple>
         implements ResourceTypes.Multiple {
 
-        Multiple(ResourceTypes.Multiple iface, NotificationContext notificationContext, Filter[] path) {
+        Multiple(ResourceTypes.Multiple iface, NotificationContext notificationContext, Path path) {
             super(iface, notificationContext, path);
         }
 
         @Override
-        public Resources.Read resources() {
-            return wrapCall(ObservableResources.Read::new, iface.resources(), Filter.relatedBy(defines).get());
+        public ObservableResources.Read resources() {
+            return wrapCall(ObservableResources.Read::new, iface.resources(), Filter.relatedBy(defines)
+                    .andType(Resource.class).get());
         }
 
         @Override
-        public MetricTypes.Read metricTypes() {
-            return wrapCall(ObservableMetricTypes.Read::new, iface.metricTypes(), Filter.relatedBy(owns).get());
+        public ObservableMetricTypes.Read metricTypes() {
+            return wrapCall(ObservableMetricTypes.Read::new, iface.metricTypes(), Filter.relatedBy(owns)
+                    .andType(MetricType.class).get());
         }
 
         @Override

@@ -14,37 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.hawkular.inventory.api;
+package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.filters.Path;
-import org.hawkular.inventory.api.model.Entity;
 
 /**
- * @author Jirka Kremser
- * @since 1.0
+ * Basically a slightly modified {@link java.util.Observable}.
+ *
+ * @author Lukas Krejci
+ * @since 0.0.1
  */
-public final class RelationAlreadyExistsException extends InventoryException {
+final class ObservableImpl<C> implements Observable<C> {
 
-    private final String relationName;
+    private final Notifying.NotificationContext notificationContext;
     private final Path path;
+    private final Action action;
 
-    public RelationAlreadyExistsException(Throwable cause, String relationName, Path path) {
-        super(cause);
-        this.relationName = relationName;
+    ObservableImpl(Notifying.NotificationContext context, Path path, Action action) {
+        this.notificationContext = context;
         this.path = path;
-    }
-
-    public RelationAlreadyExistsException(String relationName, Path path) {
-        this(null, relationName, path);
-    }
-
-    public RelationAlreadyExistsException(Entity entity) {
-        this(entity.getId(), Path.to(entity));
+        this.action = action;
     }
 
     @Override
-    public String getMessage() {
-        return "Relation with id '" + relationName + "' already exists at the position: " + path;
+    public void subscribe(Observer<C> observer) {
+        notificationContext.storage.addObserver(observer, action, path);
     }
+
+    @Override
+    public void unsubscribe(Observer<C> observer) {
+        notificationContext.storage.removeObserver(observer, action, path);
+    }
+
 }

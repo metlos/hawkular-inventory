@@ -20,13 +20,16 @@ import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Metrics;
 import org.hawkular.inventory.api.RelationNotFoundException;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
+import org.hawkular.inventory.api.filters.With;
 import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.observable.Notifying.NotificationContext;
 
 import java.util.Set;
 
 import static org.hawkular.inventory.api.Relationships.Direction.outgoing;
+import static org.hawkular.inventory.api.Relationships.WellKnown.owns;
 
 /**
  * @author Lukas Krejci
@@ -37,95 +40,109 @@ public final class ObservableMetrics {
 
     }
 
-    public static final class Read extends Notifying<Metrics.Read> implements Metrics.Read {
+    public static final class Read extends NotifyingWithDefaultObservables<Metrics.Read, Metric>
+            implements Metrics.Read {
 
-        Read(Metrics.Read iface, NotificationContext notificationContext, Filter[] path) {
-            super(iface, notificationContext, path);
+        Read(Metrics.Read iface, NotificationContext notificationContext, Path path) {
+            super(iface, Metric.class, notificationContext, path);
         }
 
         @Override
-        public Metrics.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrapCall(Single::new, iface.get(id), Filter.byTypeAndId(Metric.class, id).get());
+        public ObservableMetrics.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return wrapCall(Single::new, iface.get(id), With.id(id));
         }
 
         @Override
-        public Metrics.Multiple getAll(Filter... filters) {
-            return wrapCall(Multiple::new, iface.getAll(filters), Filter.byType(Metric.class).and(filters).get());
+        public ObservableMetrics.Multiple getAll(Filter... filters) {
+            return wrapCall(Multiple::new, iface.getAll(filters), filters);
         }
     }
 
-    public static final class ReadWrite extends Notifying<Metrics.ReadWrite> implements Metrics.ReadWrite {
+    public static final class ReadWrite
+            extends NotifyingWithDefaultObservables<Metrics.ReadWrite, Metric>
+            implements Metrics.ReadWrite {
 
-        ReadWrite(Metrics.ReadWrite iface, NotificationContext notificationContext, Filter[] path) {
-            super(iface, notificationContext, path);
+        ReadWrite(Metrics.ReadWrite iface, NotificationContext notificationContext, Path path) {
+            super(iface, Metric.class, notificationContext, path);
         }
 
         @Override
-        public Metrics.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrapCall(Single::new, iface.get(id), Filter.byTypeAndId(Metric.class, id).get());
+        public ObservableMetrics.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return wrapCall(Single::new, iface.get(id), With.id(id));
         }
 
         @Override
-        public Metrics.Multiple getAll(Filter... filters) {
-            return wrapCall(Multiple::new, iface.getAll(filters), Filter.byType(Metric.class).and(filters).get());
+        public ObservableMetrics.Multiple getAll(Filter... filters) {
+            return wrapCall(Multiple::new, iface.getAll(filters), filters);
         }
 
         @Override
-        public Metrics.Single create(Metric.Blueprint blueprint) throws EntityAlreadyExistsException {
-            return wrapCallAndNotify(Single::new, iface.create(blueprint), new Actions.CreateAction<>(),
-                    (fs) -> new Actions.PathContext<>(Metric.class, fs),
-                    Filter.byTypeAndId(Metric.class, blueprint.getId()).get());
+        public ObservableMetrics.Single create(Metric.Blueprint blueprint) throws EntityAlreadyExistsException {
+            return wrapCallAndNotify(Single::new, () -> iface.create(blueprint), Action.CREATE,
+                    (fs, s) -> new Contexts.EntityPath<>(Metric.class, fs, s), With.id(blueprint.getId()));
         }
 
         @Override
         public void update(Metric metric) throws EntityNotFoundException {
-            Actions.PathContext<Metric> ctx = new Actions.PathContext<>(Metric.class, path);
-            doAndNotify(iface::update, metric, new Actions.UpdateAction<>(), ctx);
+            Contexts.EntityPath<Metric> ctx = new Contexts.EntityPath<>(Metric.class, path, metric);
+            doAndNotify(iface::update, metric, Action.UPDATE, ctx);
         }
 
         @Override
         public void delete(String id) throws EntityNotFoundException {
-            Actions.PathContext<Metric> ctx = new Actions.PathContext<>(Metric.class, path);
-            doAndNotify(iface::delete, id, new Actions.UpdateAction<>(), ctx);
+            Contexts.EntityPath<Metric> ctx = new Contexts.EntityPath<>(Metric.class, path, get(id).entity());
+            doAndNotify(iface::delete, id, Action.UPDATE, ctx);
         }
     }
 
-    public static final class ReadRelate extends Notifying<Metrics.ReadRelate> implements Metrics.ReadRelate {
+    public static final class ReadRelate
+            extends NotifyingWithDefaultObservables<Metrics.ReadRelate, Metric>
+            implements Metrics.ReadRelate {
 
-        ReadRelate(Metrics.ReadRelate iface, NotificationContext notificationContext, Filter[] path) {
-            super(iface, notificationContext, path);
+        ReadRelate(Metrics.ReadRelate iface, NotificationContext notificationContext, Path path) {
+            super(iface, Metric.class, notificationContext, path);
         }
 
         @Override
-        public Metrics.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrapCall(Single::new, iface.get(id), Filter.byTypeAndId(Metric.class, id).get());
+        public ObservableMetrics.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return wrapCall(Single::new, iface.get(id), With.id(id));
         }
 
         @Override
-        public Metrics.Multiple getAll(Filter... filters) {
-            return wrapCall(Multiple::new, iface.getAll(filters), Filter.byType(Metric.class).and(filters).get());
+        public ObservableMetrics.Multiple getAll(Filter... filters) {
+            return wrapCall(Multiple::new, iface.getAll(filters), filters);
         }
 
         @Override
         public void add(String id) {
-            Actions.LinkedAction.RelationshipEnds ctx = new Actions.LinkedAction.RelationshipEnds(
-                    Relationships.WellKnown.owns.name(), outgoing, path, get(id).entity());
+            Metrics.Single target = get(id);
 
-            doAndNotify(iface::add, id, new Actions.LinkedAction(), ctx);
+            Contexts.RelationshipLink ctx = new Contexts.RelationshipLink(
+                    owns.name(), outgoing, path, target.entity());
+
+            doAndNotify(iface::add, id, Action.CREATE, ctx);
         }
 
         @Override
         public void remove(String id) {
-            Actions.LinkedAction.RelationshipEnds ctx = new Actions.LinkedAction.RelationshipEnds(
-                    Relationships.WellKnown.owns.name(), outgoing, path, get(id).entity());
+            Contexts.RelationshipLink ctx = new Contexts.RelationshipLink(
+                    owns.name(), outgoing, path, get(id).entity());
 
-            doAndNotify(iface::remove, id, new Actions.UnlinkedAction(), ctx);
+            doAndNotify(iface::remove, id, Action.DELETE, ctx);
+        }
+
+        public Observable<Contexts.RelationshipLink> onAdd() {
+            return new ObservableImpl<>(notificationContext, path, Action.CREATE);
+        }
+
+        public Observable<Contexts.RelationshipLink> onRemove() {
+            return new ObservableImpl<>(notificationContext, path, Action.DELETE);
         }
     }
 
     public static final class Single extends Notifying.Relatable.Single<Metrics.Single> implements Metrics.Single {
 
-        Single(Metrics.Single iface, NotificationContext notificationContext, Filter[] path) {
+        Single(Metrics.Single iface, NotificationContext notificationContext, Path path) {
             super(iface, notificationContext, path);
         }
 
@@ -138,7 +155,7 @@ public final class ObservableMetrics {
     public static final class Multiple extends Notifying.Relatable.Multiple<Metrics.Multiple>
             implements Metrics.Multiple {
 
-        Multiple(Metrics.Multiple iface, NotificationContext notificationContext, Filter[] path) {
+        Multiple(Metrics.Multiple iface, NotificationContext notificationContext, Path path) {
             super(iface, notificationContext, path);
         }
 

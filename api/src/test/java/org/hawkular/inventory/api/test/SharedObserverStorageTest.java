@@ -17,9 +17,15 @@
 package org.hawkular.inventory.api.test;
 
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
+import org.hawkular.inventory.api.filters.Related;
+import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Tenant;
-import org.hawkular.inventory.api.observable.Actions;
+import org.hawkular.inventory.api.observable.Action;
+import org.hawkular.inventory.api.observable.Contexts;
+import org.hawkular.inventory.api.observable.ObservableInventory;
 import org.hawkular.inventory.api.observable.Observer;
+import org.hawkular.inventory.api.observable.ObserverNotificationStrategy;
 import org.hawkular.inventory.api.observable.SharedObserverStorage;
 import org.junit.Assert;
 import org.junit.Before;
@@ -35,7 +41,7 @@ import java.util.Set;
 public class SharedObserverStorageTest {
 
     private SharedObserverStorage storage;
-    private Observer observer;
+    private Observer<?> observer;
 
     @Before
     public void instantiate() {
@@ -45,11 +51,11 @@ public class SharedObserverStorageTest {
 
     @Test
     public void canBeRetrievedWithTheSamePath() throws Exception {
-        Filter[] path = Filter.byTypeAndId(Tenant.class, "kachna").get();
+        Path path = Path.builder().add(Filter.byTypeAndId(Tenant.class, "kachna")).build();
 
-        storage.addObserver(observer, new Actions.CreateAction<>(), path);
+        storage.addObserver(observer, Action.CREATE, path);
 
-        Set<Observer> observers = storage.getObservers(new Actions.CreateAction<>(), path);
+        Set<Observer<Object>> observers = storage.getObservers(Action.CREATE, path);
 
         Assert.assertEquals(1, observers.size());
         Assert.assertSame(observer, observers.iterator().next());
@@ -57,23 +63,76 @@ public class SharedObserverStorageTest {
 
     @Test
     public void canBeRemovedWithTheSamePath() throws Exception {
-        Filter[] path = Filter.byTypeAndId(Tenant.class, "kachna").get();
+        Path path = Path.builder().add(Filter.byTypeAndId(Tenant.class, "kachna")).build();
 
-        storage.addObserver(observer, new Actions.CreateAction<>(), path);
-        storage.removeObserver(observer, new Actions.CreateAction<>(), path);
+        storage.addObserver(observer, Action.CREATE, path);
+        storage.removeObserver(observer, Action.CREATE, path);
 
-        Set<Observer> observers = storage.getObservers(new Actions.CreateAction<>(), path);
+        Set<Observer<Object>> observers = storage.getObservers(Action.CREATE, path);
 
         Assert.assertEquals(0, observers.size());
     }
 
     @Test
     public void canBeRetrievedWithMoreGenericPath() throws Exception {
+        Path path = Path.builder().add(Filter.byTypeAndId(Tenant.class, "tenant").and(Related.by("contains"))
+                .andType(Environment.class).andId("env")).build();
 
+        storage.addObserver(observer, Action.CREATE, path);
+
+        Path retrievalPath = Path.builder().add(Filter.byTypeAndId(Tenant.class, "tenant").and(Related.by("contains"))
+                .andType(Environment.class)).build();
+
+        Set<Observer<Object>> observers = storage.getObservers(Action.CREATE, retrievalPath);
+
+        Assert.assertEquals(1, observers.size());
+        Assert.assertEquals(observer, observers.iterator().next());
+
+        retrievalPath = Path.builder().add(Filter.byTypeAndId(Tenant.class, "tenant").and(Related.by("contains")))
+                .build();
+        observers = storage.getObservers(Action.CREATE, retrievalPath);
+
+        Assert.assertEquals(1, observers.size());
+        Assert.assertEquals(observer, observers.iterator().next());
+
+        retrievalPath = Path.builder().add(Filter.byTypeAndId(Tenant.class, "tenant")).build();
+        observers = storage.getObservers(Action.CREATE, retrievalPath);
+
+        Assert.assertEquals(0, observers.size());
     }
 
     @Test
     public void cannotBeRemovedWithMoreGenericPath() throws Exception {
+        Path addPath = Path.builder().add(Filter.byTypeAndId(Tenant.class, "tenant").and(Related.by("contains"))
+                .andType(Environment.class).andId("env")).build();
 
+        storage.addObserver(observer, Action.CREATE, addPath);
+
+        Path delPath = Path.builder().add(Filter.byTypeAndId(Tenant.class, "tenant").and(Related.by("contains"))
+                .andType(Environment.class).andId("env")).build();
+
+        storage.removeObserver(observer, Action.CREATE, delPath);
+
+        Assert.assertEquals(0, storage.getObservers(Action.CREATE, addPath).size());
+
+        storage.addObserver(observer, Action.CREATE, addPath);
+
+        delPath = Path.builder().add(Filter.byTypeAndId(Tenant.class, "tenant").and(Related.by("contains"))).build();
+
+        storage.removeObserver(observer, Action.CREATE, delPath);
+
+        Assert.assertEquals(1, storage.getObservers(Action.CREATE, addPath).size());
+
+        ObservableInventory oi = new ObservableInventory(null, new ObserverNotificationStrategy.Synchronous());
+
+        oi.tenants().onCreate().subscribe(new Observer<Contexts.EntityPath<Tenant>>() {
+            @Override
+            public void onSuccess(Action action, Contexts.EntityPath<Tenant> actionContext) {
+            }
+
+            @Override
+            public void onFailure(Throwable error, Action action, Contexts.EntityPath<Tenant> actionContext) {
+            }
+        });
     }
 }

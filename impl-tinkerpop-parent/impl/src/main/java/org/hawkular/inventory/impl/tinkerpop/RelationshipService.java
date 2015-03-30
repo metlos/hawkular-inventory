@@ -25,6 +25,7 @@ import com.tinkerpop.pipes.PipeFunction;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
 import org.hawkular.inventory.api.filters.RelationFilter;
 import org.hawkular.inventory.api.filters.RelationWith;
 import org.hawkular.inventory.api.model.Entity;
@@ -185,19 +186,21 @@ final class RelationshipService<E extends Entity> extends AbstractSourcedGraphSe
 
         HawkularPipeline<?, Edge> edges = pipe.hasUid(relationship.getId()).cast(Edge.class);
         if (!edges.hasNext()) {
-            throw new RelationNotFoundException(relationship.getId(), FilterApplicator.filters(path));
+            throw new RelationNotFoundException(relationship.getId(),
+                    Path.builder().add(FilterApplicator.filters(path)).build());
         }
         Edge edge = edges.next();
         if (!edge.getLabel().equals(relationship.getName())) {
-            throw new RelationNotFoundException(getUid(edge), FilterApplicator.filters(path),
-                    "Cannot update the name of a relationship. Create a new relationship instead.");
+            throw new RelationNotFoundException(getUid(edge), Path.builder().add(FilterApplicator.filters(path))
+                    .build(), "Cannot update the name of a relationship. Create a new relationship instead.");
         }
         final Direction d1 = direction == outgoing ? Direction.IN : Direction.OUT;
         final Direction d2 = direction == outgoing ? Direction.OUT : Direction.IN;
         if (!(matches(edge.getVertex(d1), relationship.getTarget()) && matches(edge.getVertex(d2),
                 relationship.getSource()))) {
 
-            throw new RelationNotFoundException(getUid(edge), FilterApplicator.filters(path),
+            throw new RelationNotFoundException(getUid(edge),
+                    Path.builder().add(FilterApplicator.filters(path)).build(),
                     "Cannot update the source or target of a relationship. Create a new relationship instead.");
         }
 

@@ -19,7 +19,7 @@ package org.hawkular.inventory.rest;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
 import org.hawkular.inventory.rest.json.ApiError;
 
 import javax.ws.rs.core.Response;
@@ -54,13 +54,13 @@ public class InventoryExceptionMapper implements ExceptionMapper<Exception> {
 
     public static class EntityTypeAndPath {
         private final String entityType;
-        private final Filter[] path;
+        private final Path path;
 
         public static EntityTypeAndPath fromException(EntityNotFoundException e) {
-            return new EntityTypeAndPath(e.getEntityType().getSimpleName(), e.getFilters());
+            return new EntityTypeAndPath(e.getEntityType().getSimpleName(), e.getPath());
         }
 
-        public EntityTypeAndPath(String entityType, Filter[] path) {
+        public EntityTypeAndPath(String entityType, Path path) {
             this.entityType = entityType;
             this.path = path;
         }
@@ -69,20 +69,20 @@ public class InventoryExceptionMapper implements ExceptionMapper<Exception> {
             return entityType;
         }
 
-        public Filter[] getPath() {
+        public Path getPath() {
             return path;
         }
     }
 
     public static class EntityIdAndPath {
         private final String entityId;
-        private final Filter[] path;
+        private final Path path;
 
         public static EntityIdAndPath fromException(EntityAlreadyExistsException e) {
             return new EntityIdAndPath(e.getEntityId(), e.getPath());
         }
 
-        public EntityIdAndPath(String entityId, Filter[] path) {
+        public EntityIdAndPath(String entityId, Path path) {
             this.entityId = entityId;
             this.path = path;
         }
@@ -91,7 +91,7 @@ public class InventoryExceptionMapper implements ExceptionMapper<Exception> {
             return entityId;
         }
 
-        public Filter[] getPath() {
+        public Path getPath() {
             return path;
         }
     }

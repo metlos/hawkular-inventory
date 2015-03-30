@@ -18,13 +18,16 @@ package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
-import org.hawkular.inventory.api.Environments;
-import org.hawkular.inventory.api.MetricTypes;
 import org.hawkular.inventory.api.RelationNotFoundException;
-import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
+import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Environment;
+import org.hawkular.inventory.api.model.MetricType;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.observable.Notifying.NotificationContext;
 
 import java.util.Set;
 
@@ -40,84 +43,85 @@ public final class ObservableTenants {
 
     }
 
-    public static final class Read extends Notifying<Tenants.Read> implements Tenants.Read {
+    public static final class Read
+            extends NotifyingWithDefaultObservables<Tenants.Read, Tenant> implements Tenants.Read {
 
-        Read(Tenants.Read iface, NotificationContext notificationContext, Filter[] path) {
-            super(iface, notificationContext, path);
+        Read(Tenants.Read iface, NotificationContext notificationContext, Path path) {
+            super(iface, Tenant.class, notificationContext, path);
         }
 
         @Override
-        public Tenants.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrapCall(TenantsSingle::new, iface.get(id), Filter.byTypeAndId(Tenant.class, id).get());
+        public ObservableTenants.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return wrapCall(Single::new, iface.get(id), With.id(id));
         }
 
         @Override
-        public Tenants.Multiple getAll(Filter... filters) {
-            return wrapCall(TenantsMultiple::new, iface.getAll(filters),
-                    Filter.byType(Tenant.class).and(filters).get());
+        public ObservableTenants.Multiple getAll(Filter... filters) {
+            return wrapCall(Multiple::new, iface.getAll(filters), filters);
         }
     }
 
-    public static final class ReadWrite extends Notifying<Tenants.ReadWrite> implements Tenants.ReadWrite {
+    public static final class ReadWrite
+            extends NotifyingWithDefaultObservables<Tenants.ReadWrite, Tenant>
+            implements Tenants.ReadWrite {
 
-        ReadWrite(Tenants.ReadWrite tenants, NotificationContext notificationContext,
-                          Filter[] path) {
-            super(tenants, notificationContext, path);
+        ReadWrite(Tenants.ReadWrite tenants, NotificationContext notificationContext, Path path) {
+            super(tenants, Tenant.class, notificationContext, path);
         }
 
         @Override
-        public Tenants.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrapCall(TenantsSingle::new, iface.get(id), Filter.byTypeAndId(Tenant.class, id).get());
+        public ObservableTenants.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return wrapCall(Single::new, iface.get(id), With.id(id));
         }
 
         @Override
-        public Tenants.Multiple getAll(Filter... filters) {
-            return wrapCall(TenantsMultiple::new, iface.getAll(filters),
-                    Filter.byType(Tenant.class).and(filters).get());
+        public ObservableTenants.Multiple getAll(Filter... filters) {
+            return wrapCall(Multiple::new, iface.getAll(filters), filters);
         }
 
         @Override
-        public Tenants.Single create(String s) throws EntityAlreadyExistsException {
-            return wrapCallAndNotify(TenantsSingle::new, iface.create(s), new Actions.CreateAction<>(),
-                    (fs) -> new Actions.PathContext<>(Tenant.class, fs), Filter.byTypeAndId(Tenant.class, s).get());
+        public ObservableTenants.Single create(String blueprint) throws EntityAlreadyExistsException {
+            return wrapCallAndNotify(Single::new, () -> iface.create(blueprint), Action.CREATE,
+                    (fs, s) -> new Contexts.EntityPath<>(Tenant.class, fs, s),
+                    With.id(blueprint));
         }
 
         @Override
         public void update(Tenant tenant) throws EntityNotFoundException {
-            Actions.PathContext<Tenant> ctx = new Actions.PathContext<>(Tenant.class, path);
-            doAndNotify(iface::update, tenant, new Actions.UpdateAction<>(), ctx);
+            Contexts.EntityPath<Tenant> ctx = new Contexts.EntityPath<>(Tenant.class, path, tenant);
+            doAndNotify(iface::update, tenant, Action.UPDATE, ctx);
         }
 
         @Override
         public void delete(String id) throws EntityNotFoundException {
-            Actions.PathContext<Tenant> ctx = new Actions.PathContext<>(Tenant.class, path);
-            doAndNotify(iface::delete, id, new Actions.DeleteAction<>(), ctx);
+            Contexts.EntityPath<Tenant> ctx = new Contexts.EntityPath<>(Tenant.class, path, get(id).entity());
+            doAndNotify(iface::delete, id, Action.DELETE, ctx);
         }
     }
 
-    public static final class TenantsSingle extends Notifying.Relatable.Single<Tenants.Single>
+    public static final class Single extends Notifying.Relatable.Single<Tenants.Single>
             implements Tenants.Single {
 
-        TenantsSingle(Tenants.Single tenants, NotificationContext notificationContext, Filter[] path) {
+        Single(Tenants.Single tenants, NotificationContext notificationContext, Path path) {
             super(tenants, notificationContext, path);
         }
 
         @Override
-        public ResourceTypes.ReadWrite resourceTypes() {
+        public ObservableResourceTypes.ReadWrite resourceTypes() {
             return wrapCall(ObservableResourceTypes.ReadWrite::new, iface.resourceTypes(),
-                    Filter.relatedBy(contains).get());
+                    Filter.relatedBy(contains).andType(ResourceType.class).get());
         }
 
         @Override
-        public MetricTypes.ReadWrite metricTypes() {
+        public ObservableMetricTypes.ReadWrite metricTypes() {
             return wrapCall(ObservableMetricTypes.ReadWrite::new, iface.metricTypes(),
-                    Filter.relatedBy(contains).get());
+                    Filter.relatedBy(contains).andType(MetricType.class).get());
         }
 
         @Override
-        public Environments.ReadWrite environments() {
+        public ObservableEnvironments.ReadWrite environments() {
             return wrapCall(ObservableEnvironments.ReadWrite::new, iface.environments(),
-                    Filter.relatedBy(contains).get());
+                    Filter.relatedBy(contains).andType(Environment.class).get());
         }
 
         @Override
@@ -126,28 +130,30 @@ public final class ObservableTenants {
         }
     }
 
-    public static final class TenantsMultiple extends Notifying.Relatable.Multiple<Tenants.Multiple>
+    public static final class Multiple extends Notifying.Relatable.Multiple<Tenants.Multiple>
             implements Tenants.Multiple {
 
-        TenantsMultiple(Tenants.Multiple tenants, NotificationContext notificationContext,
-            Filter[] path) {
+        Multiple(Tenants.Multiple tenants, NotificationContext notificationContext, Path path) {
 
             super(tenants, notificationContext, path);
         }
 
         @Override
-        public ResourceTypes.Read resourceTypes() {
-            return wrapCall(ObservableResourceTypes.Read::new, iface.resourceTypes(), Filter.relatedBy(contains).get());
+        public ObservableResourceTypes.Read resourceTypes() {
+            return wrapCall(ObservableResourceTypes.Read::new, iface.resourceTypes(), Filter.relatedBy(contains)
+                    .andType(ResourceType.class).get());
         }
 
         @Override
-        public MetricTypes.Read metricTypes() {
-            return wrapCall(ObservableMetricTypes.Read::new, iface.metricTypes(), Filter.relatedBy(contains).get());
+        public ObservableMetricTypes.Read metricTypes() {
+            return wrapCall(ObservableMetricTypes.Read::new, iface.metricTypes(), Filter.relatedBy(contains)
+                    .andType(MetricType.class).get());
         }
 
         @Override
-        public Environments.Read environments() {
-            return wrapCall(ObservableEnvironments.Read::new, iface.environments(), Filter.relatedBy(contains).get());
+        public ObservableEnvironments.Read environments() {
+            return wrapCall(ObservableEnvironments.Read::new, iface.environments(), Filter.relatedBy(contains)
+                    .andType(Environment.class).get());
         }
 
         @Override

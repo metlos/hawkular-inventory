@@ -17,10 +17,8 @@
 
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
 import org.hawkular.inventory.api.model.Entity;
-
-import java.util.Arrays;
 
 /**
  * @author Jirka Kremser
@@ -29,32 +27,32 @@ import java.util.Arrays;
 public final class RelationNotFoundException extends InventoryException {
 
     private final String sourceEntityType;
-    private final Filter[] filters;
+    private final Path path;
     private final String nameOrId;
 
-    public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Filter[] filters,
+    public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Path path,
                                      String message, Throwable cause) {
         super(message, cause);
         this.sourceEntityType = sourceEntityType != null ? sourceEntityType.getSimpleName() : null;
-        this.filters = filters;
+        this.path = path;
         this.nameOrId = nameOrId;
     }
 
-    public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Filter[] filters,
+    public RelationNotFoundException(Class<? extends Entity> sourceEntityType, String nameOrId, Path path,
                                      Throwable cause) {
-        this(sourceEntityType, nameOrId, filters, null, cause);
+        this(sourceEntityType, nameOrId, path, null, cause);
     }
 
-    public RelationNotFoundException(String nameOrId, Filter[] filters, String message) {
-        this(null, nameOrId, filters, message, null);
+    public RelationNotFoundException(String nameOrId, Path path, String message) {
+        this(null, nameOrId, path, message, null);
     }
 
-    public RelationNotFoundException(Class<? extends Entity> sourceEntityType, Filter[] filters) {
-        this(sourceEntityType, null, filters, null, null);
+    public RelationNotFoundException(Class<? extends Entity> sourceEntityType, Path path) {
+        this(sourceEntityType, null, path, null, null);
     }
 
-    public RelationNotFoundException(String nameOrId, Filter[] filters) {
-        this(null, nameOrId, filters, null, null);
+    public RelationNotFoundException(String nameOrId, Path path) {
+        this(null, nameOrId, path, null, null);
     }
 
     @Override
@@ -62,7 +60,7 @@ public final class RelationNotFoundException extends InventoryException {
         return "Relation"
                 + (sourceEntityType != null ? " with source in " + sourceEntityType : "")
                 + (nameOrId != null ? " with name or id '" + nameOrId + "'" : "")
-                + (filters != null ? " searched for using filters: " + Arrays.toString(filters) : "")
+                + (path != null ? " searched on path: " + path : "")
                 + (super.getMessage() == null ? ": Was not found." : ": " + super.getMessage());
     }
 }

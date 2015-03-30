@@ -17,10 +17,8 @@
 
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
 import org.hawkular.inventory.api.model.Entity;
-
-import java.util.Arrays;
 
 /**
  * @author Lukas Krejci
@@ -29,18 +27,18 @@ import java.util.Arrays;
 public final class EntityAlreadyExistsException extends InventoryException {
 
     private final String entityId;
-    private final Filter[] path;
+    private final Path path;
 
     public EntityAlreadyExistsException(Entity entity) {
-        this(entity.getId(), Filter.pathTo(entity));
+        this(entity.getId(), Path.to(entity));
     }
 
-    public EntityAlreadyExistsException(String entityId, Filter[] path) {
+    public EntityAlreadyExistsException(String entityId, Path path) {
         this.entityId = entityId;
         this.path = path;
     }
 
-    public EntityAlreadyExistsException(Throwable cause, String entityId, Filter[] path) {
+    public EntityAlreadyExistsException(Throwable cause, String entityId, Path path) {
         super(cause);
         this.entityId = entityId;
         this.path = path;
@@ -50,12 +48,12 @@ public final class EntityAlreadyExistsException extends InventoryException {
         return entityId;
     }
 
-    public Filter[] getPath() {
+    public Path getPath() {
         return path;
     }
 
     @Override
     public String getMessage() {
-        return "Entity with id '" + entityId + "' already exists at the position: " + Arrays.toString(path);
+        return "Entity with id '" + entityId + "' already exists at the position: " + path;
     }
 }

@@ -19,11 +19,14 @@ package org.hawkular.inventory.api.observable;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Feeds;
 import org.hawkular.inventory.api.RelationNotFoundException;
-import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
 import org.hawkular.inventory.api.filters.With;
+import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.observable.Notifying.NotificationContext;
 
 import java.util.Set;
 
@@ -42,54 +45,62 @@ public final class ObservableFeeds {
             implements Feeds.ReadAndRegister {
 
 
-        ReadAndRegister(Feeds.ReadAndRegister iface, NotificationContext notificationContext, Filter[] path) {
+        ReadAndRegister(Feeds.ReadAndRegister iface, NotificationContext notificationContext, Path path) {
             super(iface, notificationContext, path);
         }
 
         @Override
-        public Feeds.Single register(String proposedId) {
-            return wrapCallAndNotify(Single::new, iface.register(proposedId), new Actions.RegisterAction(),
-                    (fs) -> new Actions.PathContext<>(Feed.class, fs),
+        public ObservableFeeds.Single register(String proposedId) {
+            return wrapCallAndNotify(Single::new, () -> iface.register(proposedId), Action.REGISTER,
+                    (fs, s) -> new Contexts.EntityPath<>(Feed.class, fs, s),
                     Filter.byTypeAndId(Feed.class, proposedId).get());
         }
 
         @Override
-        public Feeds.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+        public ObservableFeeds.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
             return wrapCall(Single::new, iface.get(id), Filter.byTypeAndId(Feed.class, id).get());
         }
 
         @Override
-        public Feeds.Multiple getAll(Filter... filters) {
+        public ObservableFeeds.Multiple getAll(Filter... filters) {
             return wrapCall(Multiple::new, iface.getAll(filters), Filter.byType(Feed.class).and(filters).get());
+        }
+
+        public Observable<Contexts.EntityPath<Feed>> onRegister() {
+            return new ObservableImpl<>(notificationContext, path, Action.REGISTER);
         }
     }
 
     public static final class Read extends Notifying<Feeds.Read> implements Feeds.Read {
-        Read(Feeds.Read iface, NotificationContext notificationContext, Filter[] path) {
+        Read(Feeds.Read iface, NotificationContext notificationContext, Path path) {
             super(iface, notificationContext, path);
         }
 
         @Override
-        public Feeds.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrapCall(Single::new, iface.get(id), Filter.by(With.type(Feed.class), With.id(id)).get());
+        public ObservableFeeds.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return wrapCall(Single::new, iface.get(id), With.id(id));
         }
 
         @Override
-        public Feeds.Multiple getAll(Filter... filters) {
-            return wrapCall(Multiple::new, iface.getAll(filters),
-                    Filter.by(With.type(Feed.class)).and(filters).get());
+        public ObservableFeeds.Multiple getAll(Filter... filters) {
+            return wrapCall(Multiple::new, iface.getAll(filters), filters);
+        }
+
+        public Observable<Contexts.EntityPath<Feed>> onRegister() {
+            return new ObservableImpl<>(notificationContext, path, Action.REGISTER);
         }
     }
 
     public static final class Single extends Notifying.Relatable.Single<Feeds.Single> implements Feeds.Single {
 
-        Single(Feeds.Single iface, NotificationContext notificationContext, Filter[] path) {
+        Single(Feeds.Single iface, NotificationContext notificationContext, Path path) {
             super(iface, notificationContext, path);
         }
 
         @Override
         public Resources.Read resources() {
-            return wrapCall(ObservableResources.Read::new, iface.resources(), Filter.relatedBy(owns).get());
+            return wrapCall(ObservableResources.Read::new, iface.resources(), Filter.relatedBy(owns)
+                    .andType(Resource.class).get());
         }
 
         @Override
@@ -100,13 +111,14 @@ public final class ObservableFeeds {
 
     public static final class Multiple extends Notifying.Relatable.Multiple<Feeds.Multiple> implements Feeds.Multiple {
 
-        Multiple(Feeds.Multiple iface, NotificationContext notificationContext, Filter[] path) {
+        Multiple(Feeds.Multiple iface, NotificationContext notificationContext, Path path) {
             super(iface, notificationContext, path);
         }
 
         @Override
         public Resources.Read resources() {
-            return wrapCall(ObservableResources.Read::new, iface.resources(), Filter.relatedBy(owns).get());
+            return wrapCall(ObservableResources.Read::new, iface.resources(), Filter.relatedBy(owns)
+                    .andType(Resource.class).get());
         }
 
         @Override

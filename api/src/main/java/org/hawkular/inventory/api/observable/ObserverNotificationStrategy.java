@@ -16,8 +16,6 @@
  */
 package org.hawkular.inventory.api.observable;
 
-import org.hawkular.inventory.api.observable.Observable.Action;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,39 +26,39 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public interface ObserverNotificationStrategy {
 
-    <C> void notifySuccess(Observable source, Observer target, Action<C> action, C context);
+    <C> void notifySuccess(Observer<C> target, Action action, C context);
 
-    <C> void notifyFailure(Observable source, Observer target, Throwable failure, Action<C> action, C context);
+    <C> void notifyFailure(Observer<C> target, Throwable failure, Action action, C context);
 
-    public static class Synchronous implements ObserverNotificationStrategy {
+    class Synchronous implements ObserverNotificationStrategy {
 
         @Override
-        public <C> void notifySuccess(Observable source, Observer target, Action<C> action, C context) {
-            target.onSuccess(source, action, context);
+        public <C> void notifySuccess(Observer<C> target, Action action, C context) {
+            target.onSuccess(action, context);
         }
 
         @Override
-        public <C> void notifyFailure(Observable source, Observer target, Throwable failure, Action<C> action,
+        public <C> void notifyFailure(Observer<C> target, Throwable failure, Action action,
                                       C context) {
 
-            target.onFailure(failure, source, action, context);
+            target.onFailure(failure, action, context);
         }
     }
 
-    public static class Asynchronous implements ObserverNotificationStrategy {
+    class Asynchronous implements ObserverNotificationStrategy {
         private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
         private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(
                 (r) -> new Thread(r, "Hawkular Async Inventory Notifications #" + COUNTER.getAndIncrement()));
 
         @Override
-        public <C> void notifySuccess(Observable source, Observer target, Action<C> action, C context) {
-            EXECUTOR.submit(() -> target.onSuccess(source, action, context));
+        public <C> void notifySuccess(Observer<C> target, Action action, C context) {
+            EXECUTOR.submit(() -> target.onSuccess(action, context));
         }
 
         @Override
-        public <C> void notifyFailure(Observable source, Observer target, Throwable failure, Action<C> action, C context) {
-            EXECUTOR.submit(() -> target.onFailure(failure, source, action, context));
+        public <C> void notifyFailure(Observer<C> target, Throwable failure, Action action, C context) {
+            EXECUTOR.submit(() -> target.onFailure(failure, action, context));
         }
     }
 }

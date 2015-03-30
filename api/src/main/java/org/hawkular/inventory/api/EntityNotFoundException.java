@@ -17,10 +17,8 @@
 
 package org.hawkular.inventory.api;
 
-import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
 import org.hawkular.inventory.api.model.Entity;
-
-import java.util.Arrays;
 
 /**
  * @author Lukas Krejci
@@ -29,17 +27,17 @@ import java.util.Arrays;
 public final class EntityNotFoundException extends InventoryException {
 
     private final Class<? extends Entity> entityType;
-    private final Filter[] filters;
+    private final Path path;
 
-    public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[] filters) {
+    public EntityNotFoundException(Class<? extends Entity> entityClass, Path path) {
         this.entityType = entityClass;
-        this.filters = filters;
+        this.path = path;
     }
 
-    public EntityNotFoundException(Class<? extends Entity> entityClass, Filter[] filters, Throwable cause) {
+    public EntityNotFoundException(Class<? extends Entity> entityClass, Path path, Throwable cause) {
         super(cause);
         this.entityType = entityClass;
-        this.filters = filters;
+        this.path = path;
     }
 
     /**
@@ -52,12 +50,12 @@ public final class EntityNotFoundException extends InventoryException {
     /**
      * The path to the entity that was not found.
      */
-    public Filter[] getFilters() {
-        return filters;
+    public Path getPath() {
+        return path;
     }
 
     @Override
     public String getMessage() {
-        return entityType.getSimpleName() + " not found using filters: " + Arrays.toString(filters);
+        return entityType.getSimpleName() + " not found on path: " + path;
     }
 }

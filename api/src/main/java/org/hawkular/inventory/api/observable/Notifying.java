@@ -18,48 +18,62 @@ package org.hawkular.inventory.api.observable;
 
 import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.filters.Filter;
+import org.hawkular.inventory.api.filters.Path;
 
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
 * @author Lukas Krejci
 * @since 0.0.1
 */
-class Notifying<T> extends ObservableBase {
+abstract class Notifying<T> {
     protected final T iface;
+    protected final NotificationContext notificationContext;
+    protected final Path path;
 
-    protected Notifying(T iface, NotificationContext context, Filter[] path) {
-        super(context, path);
+    protected Notifying(T iface, NotificationContext context, Path path) {
         this.iface = iface;
+        this.notificationContext = context;
+        this.path = path;
     }
 
-    protected <I, R> R wrapCall(TriFunction<I, NotificationContext, Filter[], R> ctor, I iface,
+    protected final <C> void notifyObservers(Throwable failure, Action action, C actionContext) {
+        Set<Observer<C>> observers = notificationContext.storage.getObservers(action, path);
+        observers.forEach((o) -> {
+            if (failure == null) {
+                notificationContext.strategy.notifySuccess(o, action, actionContext);
+            } else {
+                notificationContext.strategy.notifyFailure(o, failure, action, actionContext);
+            }
+        });
+    }
+
+    protected <I, R> R wrapCall(TriFunction<I, NotificationContext, Path, R> ctor, I iface,
                                 Filter... pathExtension) {
-        return ctor.apply(iface, notificationContext, Filter.by(path).and(pathExtension).get());
+        return ctor.apply(iface, notificationContext, path.extend(pathExtension));
     }
 
-    protected <I, P, R> R wrapCall(TetraFunction<I, NotificationContext, P, Filter[], R> ctor, I iface,
-                                   P param, Filter... pathExtension) {
-        return ctor.apply(iface, notificationContext, param, Filter.by(path).and(pathExtension).get());
-    }
-    
-    protected <I, R, C> R wrapCallAndNotify(TriFunction<I, NotificationContext, Filter[], R> ctor, I iface,
-                                         Action<C> action, Function<Filter[], C> contextProducer,
-                                         Filter... pathExtension) {
-        Filter[] newPath = Filter.by(path).and(pathExtension).get();
+    protected <I, R, C> R wrapCallAndNotify(TriFunction<I, NotificationContext, Path, R> ctor,
+                                            Supplier<I> ifaceSupplier, Action action,
+                                            BiFunction<Path, Optional<R>, C> contextProducer, Filter... pathExtension) {
+        Path newPath = path.extend(pathExtension);
         try {
-            R ret = wrapCall(ctor, iface, newPath);
-            notifyObservers(null, action, contextProducer.apply(newPath));
+            I iface = ifaceSupplier.get();
+            R ret = wrapCall(ctor, iface, pathExtension);
+            notifyObservers(null, action, contextProducer.apply(newPath, Optional.ofNullable(ret)));
             return ret;
         } catch (Throwable t) {
-            notifyObservers(t, action, contextProducer.apply(newPath));
+            notifyObservers(t, action, contextProducer.apply(newPath, Optional.empty()));
             throw t;
         }
     }
 
-    protected <P, C> void doAndNotify(Consumer<P> f, P param, Action<C> action, C context) {
+    protected <P, C> void doAndNotify(Consumer<P> f, P param, Action action, C context) {
         try {
             f.accept(param);
             notifyObservers(null, action, context);
@@ -69,7 +83,7 @@ class Notifying<T> extends ObservableBase {
         }
     }
 
-    protected <P1, P2, C> void doAndNotify(BiConsumer<P1, P2> f, P1 p1, P2 p2, Action<C> action, C context) {
+    protected <P1, P2, C> void doAndNotify(BiConsumer<P1, P2> f, P1 p1, P2 p2, Action action, C context) {
         try {
             f.accept(p1, p2);
             notifyObservers(null, action, context);
@@ -88,16 +102,33 @@ class Notifying<T> extends ObservableBase {
         R apply(T t, U u, V v, W w);
     }
 
-    static final class Relatable {
+    static class Relatable<T> {
 
-        private Relatable() {
+        protected final T iface;
+        protected final NotificationContext notificationContext;
+        protected final Path path;
 
+        private Relatable(T iface, NotificationContext notificationContext, Path path) {
+            this.iface = iface;
+
+            this.notificationContext = notificationContext;
+            this.path = path;
+        }
+
+        protected <I, R> R wrapCall(TriFunction<I, NotificationContext, Path, R> ctor, I iface,
+                                    Filter... pathExtension) {
+            return ctor.apply(iface, notificationContext, path.extend(pathExtension));
+        }
+
+        protected <I, P, R> R wrapCall(TetraFunction<I, NotificationContext, P, Path, R> ctor, I iface,
+                                       P param, Filter... pathExtension) {
+            return ctor.apply(iface, notificationContext, param, path.extend(pathExtension));
         }
 
         public static abstract class Single<T extends org.hawkular.inventory.api.Relatable<Relationships.ReadWrite>>
-                extends Notifying<T> {
+                extends Relatable<T> {
 
-            protected Single(T iface, NotificationContext notificationContext, Filter[] path) {
+            protected Single(T iface, NotificationContext notificationContext, Path path) {
                 super(iface, notificationContext, path);
             }
 
@@ -106,15 +137,14 @@ class Notifying<T> extends ObservableBase {
             }
 
             public Relationships.ReadWrite relationships(Relationships.Direction direction) {
-                return wrapCall(ObservableRelationships.ReadWrite::new, iface.relationships(direction), direction,
-                        Filter.all());
+                return wrapCall(ObservableRelationships.ReadWrite::new, iface.relationships(direction), direction);
             }
         }
 
         public static abstract class Multiple<T extends org.hawkular.inventory.api.Relatable<Relationships.Read>>
-                extends Notifying<T> {
+                extends Relatable<T> {
 
-            protected Multiple(T iface, NotificationContext notificationContext, Filter[] path) {
+            protected Multiple(T iface, NotificationContext notificationContext, Path path) {
                 super(iface, notificationContext, path);
             }
 
@@ -125,6 +155,16 @@ class Notifying<T> extends ObservableBase {
             public Relationships.Read relationships(Relationships.Direction direction) {
                 return wrapCall(ObservableRelationships.Read::new, iface.relationships(direction), direction);
             }
+        }
+    }
+
+    protected static class NotificationContext {
+        public final ObserverNotificationStrategy strategy;
+        public final SharedObserverStorage storage;
+
+        public NotificationContext(SharedObserverStorage storage, ObserverNotificationStrategy strategy) {
+            this.storage = storage;
+            this.strategy = strategy;
         }
     }
 }

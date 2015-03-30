@@ -52,6 +52,11 @@ public abstract class RelationFilter extends Filter {
         return EMPTY;
     }
 
+    @Override
+    public boolean isEntityFilter() {
+        return false;
+    }
+
     public static final class Accumulator {
         private final List<RelationFilter> filters = new ArrayList<>();
 

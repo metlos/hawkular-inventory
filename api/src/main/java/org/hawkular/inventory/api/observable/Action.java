@@ -20,9 +20,7 @@ package org.hawkular.inventory.api.observable;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-public interface Observer<C> {
+public enum Action {
 
-    void onSuccess(Action action, C actionContext);
-
-    void onFailure(Throwable error, Action action, C actionContext);
+    CREATE, UPDATE, DELETE, LINK, UNLINK, COPY, REGISTER;
 }

@@ -199,8 +199,8 @@ public class Related<T extends Entity> extends Filter {
     }
 
     @Override
-    public boolean isPathTraversing() {
-        return true;
+    public boolean isEntityFilter() {
+        return false;
     }
 
     /**
