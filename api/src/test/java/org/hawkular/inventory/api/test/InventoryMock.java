@@ -133,10 +133,16 @@ public class InventoryMock {
         when(environmentsMultiple.metrics()).thenReturn(metricsRead);
         when(environmentsMultiple.relationships()).thenReturn(relationshipsRead);
         when(environmentsMultiple.relationships(any())).thenReturn(relationshipsRead);
+        when(environmentsMultiple.resources()).thenReturn(resourcesRead);
         when(environmentsRead.get(any())).thenReturn(environmentsSingle);
         when(environmentsRead.getAll(anyVararg())).thenReturn(environmentsMultiple);
         when(environmentsReadWrite.get(any())).thenReturn(environmentsSingle);
         when(environmentsReadWrite.getAll(anyVararg())).thenReturn(environmentsMultiple);
+        when(environmentsSingle.feeds()).thenReturn(feedsReadAndRegister);
+        when(environmentsSingle.metrics()).thenReturn(metricsReadWrite);
+        when(environmentsSingle.relationships()).thenReturn(relationshipsReadWrite);
+        when(environmentsSingle.relationships(any())).thenReturn(relationshipsReadWrite);
+        when(environmentsSingle.resources()).thenReturn(resourcesReadWrite);
 
         when(feedsMultiple.relationships()).thenReturn(relationshipsRead);
         when(feedsMultiple.relationships(anyVararg())).thenReturn(relationshipsRead);

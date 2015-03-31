@@ -107,6 +107,10 @@ public final class ResourceType extends OwnedEntity {
             this.version = version;
         }
 
+        public Blueprint(String id, String version) {
+            this(id, new Version(version));
+        }
+
         public String getId() {
             return id;
         }
