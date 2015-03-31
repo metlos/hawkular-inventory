@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.test;
 
+import org.hawkular.inventory.api.Relationships;
 import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.model.Environment;
 import org.hawkular.inventory.api.model.Feed;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 /**
@@ -339,6 +341,28 @@ public class ObservableInventoryTest {
         Assert.assertEquals(1, observer.failures.get(Action.CREATE).size());
         Assert.assertEquals(0, observer2.failures.size());
         Assert.assertEquals(1, observer3.failures.size());
+    }
+
+    @Test
+    public void testRelationshipCreationObserved() throws Exception {
+        Relationships.ReadWrite relationshipsReadWrite = Mockito.mock(Relationships.ReadWrite.class);
+        when(InventoryMock.tenantsSingle.relationships(any())).thenReturn(relationshipsReadWrite);
+        when(relationshipsReadWrite.linkWith(anyString(), any())).thenReturn(InventoryMock.relationshipsSingle);
+
+        TrackingObserver<?> observer2 = new TrackingObserver<>();
+        TrackingObserver<?> observer3 = new TrackingObserver<>();
+
+        observableInventory.tenants().getAll().relationships(Relationships.Direction.both).onCreate()
+                .subscribe(observer.cast());
+        observableInventory.tenants().getAll().relationships(Relationships.Direction.incoming).onCreate()
+                .subscribe(observer2.cast());
+        observableInventory.tenants().getAll().relationships(Relationships.Direction.outgoing).onCreate()
+                .subscribe(observer3.cast());
+
+
+        observableInventory.tenants().get("tenant").relationships().linkWith("kachnak", new Tenant("tenant2"));
+
+        Assert.assertEquals(1, observer.successes.get(Action.CREATE).size());
     }
 
     private static class TrackingObserver<C> implements Observer<C> {

@@ -24,12 +24,12 @@ import org.hawkular.inventory.api.model.Entity;
  * @author Lukas Krejci
  * @since 0.0.1
  */
-abstract class NotifyingWithDefaultObservables<WrappedInterface, E extends Entity>
+public abstract class NotifyingWithDefaultObservables<WrappedInterface, E extends Entity>
         extends Notifying<WrappedInterface> {
 
     protected final Class<E> entityType;
 
-    protected NotifyingWithDefaultObservables(WrappedInterface iface, Class<E> entityType, NotificationContext context,
+    NotifyingWithDefaultObservables(WrappedInterface iface, Class<E> entityType, NotificationContext context,
                                               Path path) {
         super(iface, context, path);
         this.entityType = entityType;

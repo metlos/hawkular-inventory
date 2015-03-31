@@ -19,6 +19,7 @@ package org.hawkular.inventory.api.observable;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.RelationNotFoundException;
 import org.hawkular.inventory.api.Relationships;
+import org.hawkular.inventory.api.Tenants;
 import org.hawkular.inventory.api.filters.Filter;
 import org.hawkular.inventory.api.filters.Path;
 import org.hawkular.inventory.api.filters.RelationFilter;
@@ -57,42 +58,43 @@ public final class ObservableRelationships {
         }
 
         @Override
-        public ObservableRelationships.Multiple named(String name) {
-            return wrapCall(Multiple::new, iface.named(name),
-                    Filter.by(RelationWith.direction(direction), RelationWith.name(name)).get());
+        public Relationships.Multiple named(String name) {
+            return iface.named(name);
         }
 
         @Override
-        public ObservableRelationships.Multiple named(Relationships.WellKnown name) {
-            return wrapCall(Multiple::new, iface.named(name),
-                    Filter.by(RelationWith.direction(direction), RelationWith.name(name.name())).get());
+        public Relationships.Multiple named(Relationships.WellKnown name) {
+            return iface.named(name);
         }
 
         @Override
-        public Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrapCall(Single::new, iface.get(id), Filter.by(RelationWith.id(id)).get());
+        public Relationships.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return iface.get(id);
         }
 
         @Override
-        public ObservableRelationships.Multiple getAll(RelationFilter... filters) {
-            return wrapCall(Multiple::new, iface.getAll(filters),
-                    Filter.by(RelationWith.direction(direction)).and(filters).get());
+        public Relationships.Multiple getAll(RelationFilter... filters) {
+            return iface.getAll(filters);
         }
 
         @Override
-        public ObservableRelationships.Single linkWith(String name, Entity targetOrSource)
+        public Relationships.Single linkWith(String name, Entity targetOrSource)
                 throws IllegalArgumentException {
-            return wrapCallAndNotify(Single::new, () -> iface.linkWith(name, targetOrSource),
-                    Action.CREATE,
-                    (fs, s) -> new Contexts.EntityPath<>(Relationship.class, path, s));
+            try {
+                Relationships.Single ret = iface.linkWith(name, targetOrSource);
+                notifyObservers(null, Action.CREATE, new Contexts.EntityPath<>(Relationship.class, path, ret.entity()));
+                return ret;
+            } catch (Exception e) {
+                notifyObservers(e, Action.CREATE,
+                        new Contexts.EntityPath<>(Relationship.class, path, (Relationship) null));
+                throw e;
+            }
         }
 
         @Override
-        public ObservableRelationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource)
+        public Relationships.Single linkWith(Relationships.WellKnown name, Entity targetOrSource)
                 throws IllegalArgumentException {
-            return wrapCallAndNotify(Single::new, () -> iface.linkWith(name, targetOrSource),
-                    Action.CREATE,
-                    (fs, s) -> new Contexts.EntityPath<>(Relationship.class, path, s));
+            return linkWith(name.name(), targetOrSource);
         }
 
         @Override
@@ -123,94 +125,40 @@ public final class ObservableRelationships {
 
     public static final class Read extends Notifying<Relationships.Read> implements Relationships.Read {
 
-        private final Relationships.Direction direction;
-
-        Read(Relationships.Read iface, NotificationContext notificationContext,
-                  Relationships.Direction direction, Path path) {
-            super(iface, notificationContext, path);
-            this.direction = direction;
-        }
-
-        @Override
-        public ObservableRelationships.Multiple named(String name) {
-            return wrapCall(Multiple::new, iface.named(name),
-                    Filter.by(RelationWith.direction(direction), RelationWith.name(name)).get());
-        }
-
-        @Override
-        public ObservableRelationships.Multiple named(Relationships.WellKnown name) {
-            return wrapCall(Multiple::new, iface.named(name),
-                    Filter.by(RelationWith.direction(direction), RelationWith.name(name.name())).get());
-        }
-
-        @Override
-        public ObservableRelationships.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
-            return wrapCall(Single::new, iface.get(id),
-                    Filter.by(RelationWith.direction(direction), RelationWith.id(id)).get());
-        }
-
-        @Override
-        public ObservableRelationships.Multiple getAll(RelationFilter... filters) {
-            return wrapCall(Multiple::new, iface.getAll(filters),
-                    Filter.by(RelationWith.direction(direction)).and(filters).get());
-        }
-    }
-
-    public static final class Single extends Notifying<Relationships.Single> implements Relationships.Single {
-
-        Single(Relationships.Single iface, NotificationContext notificationContext, Path path) {
+        Read(Relationships.Read iface, NotificationContext notificationContext, Path path) {
             super(iface, notificationContext, path);
         }
 
         @Override
-        public Relationship entity() {
-            return iface.entity();
-        }
-    }
-
-    public static final class Multiple extends Notifying<Relationships.Multiple> implements Relationships.Multiple {
-        Multiple(Relationships.Multiple iface, NotificationContext notificationContext, Path path) {
-            super(iface, notificationContext, path);
+        public Relationships.Multiple named(String name) {
+            return iface.named(name);
         }
 
         @Override
-        public ObservableTenants.Read tenants() {
-            return wrapCall(ObservableTenants.Read::new, iface.tenants(), With.type(Tenant.class));
+        public Relationships.Multiple named(Relationships.WellKnown name) {
+            return iface.named(name);
         }
 
         @Override
-        public ObservableEnvironments.Read environments() {
-            return wrapCall(ObservableEnvironments.Read::new, iface.environments(), With.type(Environment.class));
+        public Relationships.Single get(String id) throws EntityNotFoundException, RelationNotFoundException {
+            return iface.get(id);
         }
 
         @Override
-        public ObservableFeeds.Read feeds() {
-            return wrapCall(ObservableFeeds.Read::new, iface.feeds(), With.type(Feed.class));
+        public Relationships.Multiple getAll(RelationFilter... filters) {
+            return iface.getAll(filters);
         }
 
-        @Override
-        public ObservableMetricTypes.Read metricTypes() {
-            return wrapCall(ObservableMetricTypes.Read::new, iface.metricTypes(), With.type(MetricType.class));
+        public Observable<Contexts.EntityPath<Relationship>> onCreate() {
+            return new ObservableImpl<>(notificationContext, path, Action.CREATE);
         }
 
-        @Override
-        public ObservableMetrics.Read metrics() {
-            return wrapCall(ObservableMetrics.Read::new, iface.metrics(), With.type(Metric.class));
+        public Observable<Contexts.EntityPath<Relationship>> onUpdate() {
+            return new ObservableImpl<>(notificationContext, path, Action.UPDATE);
         }
 
-        @Override
-        public ObservableResources.Read resources() {
-            return wrapCall(ObservableResources.Read::new, iface.resources(), With.type(Resource.class));
-        }
-
-        @Override
-        public ObservableResourceTypes.Read resourceTypes() {
-            return wrapCall(ObservableResourceTypes.Read::new, iface.resourceTypes(), With.type(ResourceType.class));
-        }
-
-        @Override
-        public Set<Relationship> entities() {
-            return iface.entities();
+        public Observable<Contexts.EntityPath<Relationship>> onDelete() {
+            return new ObservableImpl<>(notificationContext, path, Action.DELETE);
         }
     }
 }

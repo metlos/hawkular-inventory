@@ -31,12 +31,12 @@ import java.util.function.Supplier;
 * @author Lukas Krejci
 * @since 0.0.1
 */
-abstract class Notifying<T> {
+public abstract class Notifying<T> {
     protected final T iface;
     protected final NotificationContext notificationContext;
     protected final Path path;
 
-    protected Notifying(T iface, NotificationContext context, Path path) {
+    Notifying(T iface, NotificationContext context, Path path) {
         this.iface = iface;
         this.notificationContext = context;
         this.path = path;
@@ -102,7 +102,7 @@ abstract class Notifying<T> {
         R apply(T t, U u, V v, W w);
     }
 
-    static class Relatable<T> {
+    public static class Relatable<T> {
 
         protected final T iface;
         protected final NotificationContext notificationContext;
@@ -132,11 +132,11 @@ abstract class Notifying<T> {
                 super(iface, notificationContext, path);
             }
 
-            public Relationships.ReadWrite relationships() {
+            public ObservableRelationships.ReadWrite relationships() {
                 return relationships(Relationships.Direction.outgoing);
             }
 
-            public Relationships.ReadWrite relationships(Relationships.Direction direction) {
+            public ObservableRelationships.ReadWrite relationships(Relationships.Direction direction) {
                 return wrapCall(ObservableRelationships.ReadWrite::new, iface.relationships(direction), direction);
             }
         }
@@ -148,12 +148,12 @@ abstract class Notifying<T> {
                 super(iface, notificationContext, path);
             }
 
-            public Relationships.Read relationships() {
+            public ObservableRelationships.Read relationships() {
                 return relationships(Relationships.Direction.outgoing);
             }
 
-            public Relationships.Read relationships(Relationships.Direction direction) {
-                return wrapCall(ObservableRelationships.Read::new, iface.relationships(direction), direction);
+            public ObservableRelationships.Read relationships(Relationships.Direction direction) {
+                return wrapCall(ObservableRelationships.Read::new, iface.relationships(direction));
             }
         }
     }
