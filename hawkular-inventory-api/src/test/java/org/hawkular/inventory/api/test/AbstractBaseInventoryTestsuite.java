@@ -1119,9 +1119,6 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         assert !f1.getId().equals(f2.getId());
     }
 
-    // the uniqueness is ensured by __cp index that has the unique property (in titan)
-    // the tests are by default run on the TinkerGraph and so this test is ignored
-    @Ignore
     @Test
     public void testNoTwoEquivalentEntitiesOnTheSamePath() throws Exception {
         try {

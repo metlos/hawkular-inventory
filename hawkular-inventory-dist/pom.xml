@@ -42,6 +42,10 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <res.dir>sql</res.dir>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -115,6 +119,14 @@
       </exclusions>
     </dependency>
 
+    <!-- By default, we're packaging the sql-backed inventory. This can be changed at build time to titan by building
+         with the "titan" profile. -->
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-impl-tinkerpop-sql-provider</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- Logging -->
     <dependency>
       <groupId>org.jboss.logging</groupId>
@@ -141,6 +153,12 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>${project.build.sourceDirectory}/../resources/${res.dir}</directory>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -171,9 +189,10 @@
   <profiles>
     <profile>
       <id>titan</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
+
+      <properties>
+        <res.dir>titan</res.dir>
+      </properties>
 
       <dependencies>
         <!-- These 3 are to be included in Hawkular - We're using Titan on Cassandra there -->
@@ -350,18 +369,6 @@
               <groupId>ch.qos.logback</groupId>
             </exclusion>
           </exclusions>
-        </dependency>
-      </dependencies>
-    </profile>
-
-    <profile>
-      <id>postgres</id>
-
-      <dependencies>
-        <dependency>
-          <groupId>org.hawkular.inventory</groupId>
-          <artifactId>hawkular-inventory-impl-tinkerpop-postgresql-provider</artifactId>
-          <version>${project.version}</version>
         </dependency>
       </dependencies>
     </profile>

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.inventory.impl.tinkerpop.postgresql.provider;
+package org.hawkular.inventory.impl.tinkerpop.sql.provider;
 
 import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.BaseInventory;
@@ -31,7 +31,7 @@ import com.tinkerpop.blueprints.Element;
  * @author Lukas Krejci
  * @since 0.13.0
  */
-public class PostgresqlTest extends AbstractBaseInventoryTestsuite<Element> {
+public class SqlTest extends AbstractBaseInventoryTestsuite<Element> {
     private static final TinkerpopInventory INVENTORY = new TinkerpopInventory();
 
     @Rule public TestName name = new TestName();
