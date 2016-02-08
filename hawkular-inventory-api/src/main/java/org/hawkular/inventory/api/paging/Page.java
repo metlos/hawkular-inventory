@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.api.paging;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -73,8 +74,14 @@ public class Page<T> implements Iterator<T>, AutoCloseable, Iterable<T> {
      * @return results in a list form
      */
     public List<T> toList() {
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
-                .collect(Collectors.<T>toList());
+        try {
+            List<T> ret = StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
+                    .collect(Collectors.<T>toList());
+            close();
+            return ret;
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to close the stream after conversion to list.", e);
+        }
     }
 
     @Override public boolean hasNext() {
@@ -90,7 +97,14 @@ public class Page<T> implements Iterator<T>, AutoCloseable, Iterable<T> {
     }
 
     @Override public void close() throws IOException {
-        this.wrapped = null;
+        try {
+            //the iterator usually fetches data from some data store so it might need closing, too.
+            if (wrapped instanceof Closeable) {
+                ((Closeable) wrapped).close();
+            }
+        } finally {
+            this.wrapped = null;
+        }
     }
 
     @Override public Iterator<T> iterator() {

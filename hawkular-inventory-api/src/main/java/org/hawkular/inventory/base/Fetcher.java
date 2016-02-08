@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.base;
 
+import java.io.IOException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -70,7 +71,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
     protected <T> T loadEntity(BiFunction<BE, E, T> conversion)
             throws EntityNotFoundException, RelationNotFoundException {
 
-        return readOnly(() -> {
+        return readOnly((t) -> {
             BE result = context.backend.querySingle(context.select().get());
 
             if (result == null) {
@@ -78,6 +79,8 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
             }
 
             E entity = context.backend.convert(result, context.entityClass);
+
+            context.backend.commit(t);
 
             if (!isApplicable(entity)) {
                 throwNotFoundException();
@@ -98,13 +101,14 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
     }
 
     public String identityHash() {
-        return readOnly(() -> {
+        return readOnly((t) -> {
             BE result = context.backend.querySingle(context.select().get());
 
             if (result == null) {
                 throwNotFoundException();
             }
 
+            context.backend.commit(t);
             return context.backend.extractIdentityHash(result);
         });
     }
@@ -169,7 +173,7 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
      * @return the page of the results as specified by the pager
      */
     protected <T> Page<T> loadEntities(Pager pager, BiFunction<BE, E, T> conversionFunction) {
-        return readOnly(() -> {
+        return readOnly((t) -> {
             Function<BE, Pair<BE, E>> conversion =
                     (e) -> new Pair<>(e, context.backend.convert(e, context.entityClass));
 
@@ -178,7 +182,18 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
 
             Page<Pair<BE, E>> intermediate =
                     context.backend.<Pair<BE, E>>query(context.select().get(), pager, conversion, filter);
-            return new TransformingPage<>(intermediate, (p) -> conversionFunction.apply(p.first, p.second));
+
+            return new TransformingPage<Pair<BE, E>, T>(intermediate,
+                    (p) -> conversionFunction.apply(p.first, p.second)) {
+                @Override public void close() throws IOException {
+                    try {
+                        context.backend.commit(t);
+                    } catch (CommitFailureException e) {
+                        throw new IOException("Failed to commit the read operation.", e);
+                    }
+                    super.close();
+                }
+            };
         });
     }
 

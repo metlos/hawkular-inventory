@@ -100,10 +100,6 @@ final class Util {
                         ret = transaction.execute(succeedingPayload);
                     }
 
-                    if (!(commitOnlyReadonly && transaction.isMutating())) {
-                        backend.commit(transaction);
-                    }
-
                     return ret;
                 } catch (Throwable t) {
                     Log.LOGGER.dTransactionFailed(t.getMessage());

@@ -16,8 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import java.util.function.Supplier;
-
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.ResultFilter;
@@ -90,7 +88,7 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @param <R>     the type of the return value
      * @return the return value provided by the payload
      */
-    protected <R> R readOnly(Supplier<R> payload) {
-        return Util.runInTransaction(context, true, (t) -> payload.get());
+    protected <R> R readOnly(PotentiallyCommittingPayload<R, BE> payload) {
+        return Util.runInTransaction(context, true, payload);
     }
 }
