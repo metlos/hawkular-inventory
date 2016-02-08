@@ -88,7 +88,7 @@ public abstract class Traversal<BE, E extends AbstractElement<?, ?>> {
      * @param <R>     the type of the return value
      * @return the return value provided by the payload
      */
-    protected <R> R readOnly(PotentiallyCommittingPayload<R, BE> payload) {
+    protected <R> R readOnly(PotentiallyCommittingPayload<R> payload) {
         return Util.runInTransaction(context, true, payload);
     }
 }

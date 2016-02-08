@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.base;
 
-import java.io.IOException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -30,6 +29,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.paging.Page;
 import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.api.paging.TransformingPage;
+import org.hawkular.inventory.base.spi.CommitFailureException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
 /**
@@ -185,11 +185,11 @@ abstract class Fetcher<BE, E extends AbstractElement<?, U>, U extends AbstractEl
 
             return new TransformingPage<Pair<BE, E>, T>(intermediate,
                     (p) -> conversionFunction.apply(p.first, p.second)) {
-                @Override public void close() throws IOException {
+                @Override public void close() {
                     try {
                         context.backend.commit(t);
                     } catch (CommitFailureException e) {
-                        throw new IOException("Failed to commit the read operation.", e);
+                        throw new IllegalStateException("Failed to commit the read operation.", e);
                     }
                     super.close();
                 }

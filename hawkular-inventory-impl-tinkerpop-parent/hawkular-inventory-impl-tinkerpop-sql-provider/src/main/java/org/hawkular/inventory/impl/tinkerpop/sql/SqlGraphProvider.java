@@ -29,6 +29,7 @@ import javax.sql.DataSource;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.hawkular.inventory.api.Configuration;
+import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.base.spi.Transaction;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
@@ -69,7 +70,7 @@ public class SqlGraphProvider implements GraphProvider<SqlGraph> {
         }
     }
 
-    @Override public void startTransaction(SqlGraph graph, Transaction<Element> transaction) {
+    @Override public void startTransaction(SqlGraph graph, InventoryBackend.Transaction transaction) {
         transaction.getAttachments().put("sql.tx", graph.newTransaction());
     }
 

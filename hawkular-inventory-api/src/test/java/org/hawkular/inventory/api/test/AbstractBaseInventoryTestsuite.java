@@ -117,7 +117,6 @@ import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import rx.Subscription;
@@ -1881,7 +1880,6 @@ public abstract class AbstractBaseInventoryTestsuite<E> {
         MetadataPack mp = inventory.tenants().get("com.acme.tenant").metadataPacks().get(expectedContentHash).entity();
 
         Assert.assertEquals(expectedContentHash, mp.getId());
-        Assert.assertEquals(expectedContentHash, IdentityHash.of(mp, inventory));
     }
 
     private <T extends Entity<B, U>, B extends Blueprint, U extends Entity.Update>

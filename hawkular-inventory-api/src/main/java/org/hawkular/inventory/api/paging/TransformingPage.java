@@ -16,7 +16,6 @@
  */
 package org.hawkular.inventory.api.paging;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
@@ -79,12 +78,14 @@ public class TransformingPage<I, O> extends Page<O> {
 
     @Override
     public List<O> toList() {
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
+        List<O> ret = StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false)
                 .collect(Collectors.<O>toList());
+        close();
+        return ret;
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         this.totalSize = wrappedPage.getTotalSize();
         this.wrappedPage.close();
         this.wrappedPage = null;
