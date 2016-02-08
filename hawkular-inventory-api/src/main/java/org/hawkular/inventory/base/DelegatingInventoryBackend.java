@@ -51,6 +51,10 @@ public class DelegatingInventoryBackend<E> implements InventoryBackend<E> {
         this.backend = backend;
     }
 
+    @Override public boolean isUniqueIndexSupported() {
+        return backend.isUniqueIndexSupported();
+    }
+
     @Override
     public void commit(Transaction transaction) throws CommitFailureException {
         backend.commit(transaction);

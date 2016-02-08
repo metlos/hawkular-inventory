@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.inventory.api.EntityAlreadyExistsException;
 import org.hawkular.inventory.api.EntityNotFoundException;
 import org.hawkular.inventory.api.Query;
 import org.hawkular.inventory.api.Relationships;
@@ -37,6 +38,8 @@ import org.hawkular.inventory.api.model.ElementTypeVisitor;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.api.paging.Page;
+import org.hawkular.inventory.api.paging.Pager;
 import org.hawkular.inventory.base.spi.ElementNotFoundException;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 
@@ -71,6 +74,17 @@ abstract class Mutator<BE, E extends Entity<?, U>, B extends Blueprint, U extend
     protected final E doCreate(B blueprint) {
         return mutating((transaction) -> {
             String id = getProposedId(blueprint);
+
+            if (!context.backend.isUniqueIndexSupported()) {
+                //poor man's way of ensuring uniqueness of CPs
+                Query existenceCheck = context.hop().filter().with(id(id)).get();
+
+                Page<BE> results = context.backend.query(existenceCheck, Pager.single());
+
+                if (results.hasNext()) {
+                    throw new EntityAlreadyExistsException(id, Query.filters(existenceCheck));
+                }
+            }
 
             preCreate(blueprint, transaction);
 

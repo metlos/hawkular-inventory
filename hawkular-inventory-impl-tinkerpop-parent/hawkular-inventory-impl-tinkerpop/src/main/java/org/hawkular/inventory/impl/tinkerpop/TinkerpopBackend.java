@@ -108,6 +108,10 @@ final class TinkerpopBackend implements InventoryBackend<Element> {
         this.context = context;
     }
 
+    @Override public boolean isUniqueIndexSupported() {
+        return context.isUniqueIndexSupported();
+    }
+
     @Override
     public Transaction startTransaction(boolean mutating) {
         return context.startTransaction(mutating);

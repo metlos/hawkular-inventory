@@ -39,6 +39,10 @@ public final class TinkerGraphProvider implements GraphProvider<TinkerGraphProvi
 
     private final WeakHashMap<WrappedTinkerGraph, ReentrantReadWriteLock> transactionLocks = new WeakHashMap<>();
 
+    @Override public boolean isUniqueIndexSupported() {
+        return false;
+    }
+
     @Override
     public WrappedTinkerGraph instantiateGraph(Configuration configuration) {
         return new WrappedTinkerGraph(new MapConfiguration(

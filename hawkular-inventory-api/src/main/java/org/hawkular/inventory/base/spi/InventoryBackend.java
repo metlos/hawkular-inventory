@@ -46,6 +46,17 @@ import org.hawkular.inventory.base.PotentiallyCommittingPayload;
 public interface InventoryBackend<E> extends AutoCloseable {
 
     /**
+     * Inventory tries to use unique indices in the backend store to ensure certain conditions in the inventory (like
+     * each entity having a unique canonical path).
+     * <p>
+     * If this is not supported by the backend, alternative techniques are employed to ensure at least some level
+     * consistency (even if not completely as safe as having the unique index ensured by the backend).
+     *
+     * @return whether the backend supports unique indices or not
+     */
+    boolean isUniqueIndexSupported();
+
+    /**
      * Starts a transaction in the backend.
      *
      * @param mutating whether there will be calls mutating the data or not

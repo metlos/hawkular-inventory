@@ -29,8 +29,6 @@ import org.hawkular.inventory.base.BaseInventory;
 import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import com.tinkerpop.blueprints.Element;
 
@@ -75,12 +73,4 @@ public class TinkerGraphTest extends AbstractBaseInventoryTestsuite<Element> {
             }
         });
     }
-
-    @Override
-    @Test
-    @Ignore
-    public void testNoTwoEquivalentEntitiesOnTheSamePath() throws Exception {
-        //this is ensured by an unique index which is not supported on tinkergraph
-    }
-
 }

@@ -30,11 +30,9 @@ import javax.sql.DataSource;
 import org.apache.commons.configuration.MapConfiguration;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.spi.InventoryBackend;
-import org.hawkular.inventory.base.spi.Transaction;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
 
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.impls.sql.SqlGraph;
 
@@ -43,6 +41,11 @@ import com.tinkerpop.blueprints.impls.sql.SqlGraph;
  * @since 0.13.0
  */
 public class SqlGraphProvider implements GraphProvider<SqlGraph> {
+
+    @Override public boolean isUniqueIndexSupported() {
+        return false;
+    }
+
     @Override public SqlGraph instantiateGraph(Configuration configuration) {
         try {
             Map<String, String> conf = configuration.prefixedWith("sql.")
@@ -70,25 +73,16 @@ public class SqlGraphProvider implements GraphProvider<SqlGraph> {
         }
     }
 
-    @Override public void startTransaction(SqlGraph graph, InventoryBackend.Transaction transaction) {
-        transaction.getAttachments().put("sql.tx", graph.newTransaction());
+    @Override public void commit(SqlGraph graph, InventoryBackend.Transaction t) {
+        ((SqlTransaction) t).tx.commit();
     }
 
-    @Override public void commit(SqlGraph graph, Transaction<Element> t) {
-        getAttachedTransation(t).commit();
+    @Override public void rollback(SqlGraph graph, InventoryBackend.Transaction t) {
+        ((SqlTransaction) t).tx.rollback();
     }
 
-    @Override public void rollback(SqlGraph graph, Transaction<Element> t) {
-        getAttachedTransation(t).rollback();
-    }
-
-    private TransactionalGraph getAttachedTransation(Transaction<Element> tx) {
-        TransactionalGraph tg = (TransactionalGraph) tx.getAttachments().get("sql.tx");
-        if (tg == null) {
-            throw new IllegalStateException("Could not find an postgresql graph attached to a transaction.");
-        }
-
-        return tg;
+    @Override public InventoryBackend.Transaction startTransaction(SqlGraph graph, boolean mutating) {
+        return new SqlTransaction(mutating, graph.newTransaction());
     }
 
     private static Set<Configuration.Property> sysPropsAsProperties() {
@@ -101,5 +95,14 @@ public class SqlGraphProvider implements GraphProvider<SqlGraph> {
                 return Collections.singletonList((String) e.getKey());
             }
         }).collect(Collectors.toSet());
+    }
+
+    private static class SqlTransaction extends InventoryBackend.Transaction {
+        private final TransactionalGraph tx;
+
+        public SqlTransaction(boolean mutating, TransactionalGraph tx) {
+            super(mutating);
+            this.tx = tx;
+        }
     }
 }
