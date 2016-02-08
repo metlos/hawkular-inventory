@@ -172,8 +172,8 @@ public class PostgresqlGraphProvider implements GraphProvider<SqlGraph> {
 
         PropertyKey(String propName, String sysProp, String env) {
             this.propertyName = propName;
-            this.sysPropNames = Collections.singletonList(sysProp);
-            this.envVarNames = Collections.singletonList(env);
+            this.sysPropNames = sysProp == null ? null : Collections.singletonList(sysProp);
+            this.envVarNames = env == null ? null : Collections.singletonList(env);
         }
 
         @Override public String getPropertyName() {
