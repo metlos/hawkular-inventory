@@ -32,9 +32,9 @@ import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.base.spi.InventoryBackend;
 import org.hawkular.inventory.impl.tinkerpop.spi.GraphProvider;
 import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
+import org.hawkular.inventory.impl.tinkerpop.sql.impl.SqlGraph;
 
 import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.impls.sql.SqlGraph;
 
 /**
  * @author Lukas Krejci

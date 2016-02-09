@@ -31,7 +31,7 @@ import com.tinkerpop.blueprints.Element;
  * @author Lukas Krejci
  * @since 0.13.0
  */
-public class SqlTest extends AbstractBaseInventoryTestsuite<Element> {
+public class SqlProviderTest extends AbstractBaseInventoryTestsuite<Element> {
     private static final TinkerpopInventory INVENTORY = new TinkerpopInventory();
 
     @Rule public TestName name = new TestName();
