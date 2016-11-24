@@ -219,6 +219,10 @@ public class BackendTransaction<E> implements Transaction<E> {
         return backend.requiresRollbackAfterFailure(t);
     }
 
+    @Override public boolean isTransactionRetryWarranted(Throwable t) {
+        return backend.isTransactionRetryWarranted(t);
+    }
+
     @Override public <T extends Entity<?, U>, U extends Entity.Update>
     EntityHistory<T> getHistory(E entity, Class<T> entityType, Instant from, Instant to) {
         return backend.getHistory(entity, entityType, from, to);

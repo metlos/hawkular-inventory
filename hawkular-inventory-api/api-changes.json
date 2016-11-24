@@ -1,0 +1,267 @@
+{
+  "1.0.1.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.added",
+          "new": "method org.hawkular.inventory.api.model.Hashes.Tree org.hawkular.inventory.api.model.Hashes::treeOf(org.hawkular.inventory.api.model.InventoryStructure<?>, org.hawkular.inventory.paths.CanonicalPath, java.util.function.Function<org.hawkular.inventory.paths.RelativePath, org.hawkular.inventory.api.model.Hashes>)",
+          "justification": "This is not adding a new feature, so no need to increase a minor version because of this."
+        }
+      ]
+    }
+  },
+  "1.1.1.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.field.visibilityReduced",
+          "old": "field org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>.blueprints",
+          "new": "field org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>.blueprints",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.field.visibilityReduced",
+          "old": "field org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>.children",
+          "new": "field org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>.children",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.field.visibilityReduced",
+          "old": "field org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>.myPath",
+          "new": "field org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>.myPath",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.added",
+          "new": "method This org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::addChild(org.hawkular.inventory.api.model.Entity.Blueprint, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method This org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::castThis()",
+          "new": "method This org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::castThis()",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint)",
+          "new": "method void org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method void org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint)",
+          "new": "method void org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method java.util.Set<org.hawkular.inventory.api.model.Entity.Blueprint> org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::getChildrenOfType(org.hawkular.inventory.api.model.InventoryStructure.EntityType)",
+          "new": "method java.util.Set<org.hawkular.inventory.api.model.InventoryStructure.FullNode> org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::getChildrenOfType(org.hawkular.inventory.api.model.InventoryStructure.EntityType)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method java.util.Set<org.hawkular.inventory.api.model.Entity.Blueprint> org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::getChildrenOfType(org.hawkular.inventory.api.model.InventoryStructure.EntityType)",
+          "new": "method java.util.Set<org.hawkular.inventory.api.model.InventoryStructure.FullNode> org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::getChildrenOfType(org.hawkular.inventory.api.model.InventoryStructure.EntityType)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.added",
+          "new": "method org.hawkular.inventory.api.model.InventoryStructure.FullNode org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::getNode()",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.added",
+          "new": "method This org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::replace(org.hawkular.inventory.api.model.Entity.Blueprint, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.added",
+          "new": "method org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder<This> org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<This extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::startChild(org.hawkular.inventory.api.model.Entity.Blueprint, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.added",
+          "new": "method void org.hawkular.inventory.api.model.InventoryStructure.Builder<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::<init>(Root, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.api.model.InventoryStructure.Builder<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint)",
+          "new": "method void org.hawkular.inventory.api.model.InventoryStructure.Builder<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method void org.hawkular.inventory.api.model.InventoryStructure.Builder<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint)",
+          "new": "method void org.hawkular.inventory.api.model.InventoryStructure.Builder<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.class.nowFinal",
+          "old": "class org.hawkular.inventory.api.model.InventoryStructure.Builder<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>",
+          "new": "class org.hawkular.inventory.api.model.InventoryStructure.Builder<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.field.visibilityReduced",
+          "old": "field org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder<ParentBuilder extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>.parentBuilder",
+          "new": "field org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder<ParentBuilder extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>.parentBuilder",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder<ParentBuilder extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint)",
+          "new": "method void org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder<ParentBuilder extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method void org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder<ParentBuilder extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint)",
+          "new": "method void org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder<ParentBuilder extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>::doReplace(org.hawkular.inventory.api.model.Entity.Blueprint, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.class.nowFinal",
+          "old": "class org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder<ParentBuilder extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>",
+          "new": "class org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder<ParentBuilder extends org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder<?>>",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.class.added",
+          "new": "class org.hawkular.inventory.api.model.InventoryStructure.FullNode",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "old": "method org.hawkular.inventory.api.model.Blueprint org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::get(org.hawkular.inventory.paths.RelativePath)",
+          "new": "method org.hawkular.inventory.api.model.Entity.Blueprint org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::get(org.hawkular.inventory.paths.RelativePath)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.added",
+          "new": "method org.hawkular.inventory.api.model.InventoryStructure.FullNode org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getNode(org.hawkular.inventory.paths.RelativePath)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "old": "method org.hawkular.inventory.api.model.Blueprint org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::get(org.hawkular.inventory.paths.RelativePath)",
+          "new": "method org.hawkular.inventory.api.model.Entity.Blueprint org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::get(org.hawkular.inventory.paths.RelativePath)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.defaultMethodAddedToInterface",
+          "new": "method java.util.stream.Stream<org.hawkular.inventory.api.model.InventoryStructure.FullNode> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getAllChildrenWithAttachments(org.hawkular.inventory.paths.RelativePath)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.defaultMethodAddedToInterface",
+          "new": "method org.hawkular.inventory.api.model.InventoryStructure.FullNode org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getNode(org.hawkular.inventory.paths.RelativePath)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        }
+      ]
+    }
+  },
+  "1.1.2.Final": {
+    "revapi": {
+      "ignore": [
+        {
+          "code": "java.method.added",
+          "new": "method org.hawkular.inventory.api.model.Hashes org.hawkular.inventory.api.model.Hashes::of(org.hawkular.inventory.api.model.Entity<?, ?>)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.field.typeChanged",
+          "old": "field org.hawkular.inventory.api.model.InventoryStructure.EntityType.elementType",
+          "new": "field org.hawkular.inventory.api.model.InventoryStructure.EntityType.elementType",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "old": "method parameter <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, ===java.lang.Class<E>===)",
+          "new": "method parameter <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Entity.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Entity.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, ===java.lang.Class<E>===)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "new": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Entity.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Entity.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.generics.formalTypeParameterChanged",
+          "old": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "new": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Entity.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Entity.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.generics.formalTypeParameterChanged",
+          "old": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "new": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Entity.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Entity.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.added",
+          "new": "method <R extends org.hawkular.inventory.api.model.Entity.Blueprint> org.hawkular.inventory.api.model.InventoryStructure.Builder<R> org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::of(R, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.defaultMethodAddedToInterface",
+          "new": "method java.util.stream.Stream<org.hawkular.inventory.api.model.InventoryStructure.FullNode> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getAllChildNodes(org.hawkular.inventory.paths.RelativePath)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.defaultMethodAddedToInterface",
+          "new": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Entity.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Entity.Blueprint> java.util.stream.Stream<org.hawkular.inventory.api.model.InventoryStructure.FullNode> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildNodes(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.parameterTypeChanged",
+          "old": "method parameter <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, ===java.lang.Class<E>===)",
+          "new": "method parameter <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Entity.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Entity.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, ===java.lang.Class<E>===)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "new": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Entity.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Entity.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.generics.formalTypeParameterChanged",
+          "old": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "new": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Entity.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Entity.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.generics.formalTypeParameterChanged",
+          "old": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "new": "method <E extends org.hawkular.inventory.api.model.Entity<? extends B extends org.hawkular.inventory.api.model.Entity.Blueprint, ?>, B extends org.hawkular.inventory.api.model.Entity.Blueprint> java.util.stream.Stream<B> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getChildren(org.hawkular.inventory.paths.RelativePath, java.lang.Class<E>)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.staticMethodAddedToInterface",
+          "new": "method <B extends org.hawkular.inventory.api.model.Entity.Blueprint> org.hawkular.inventory.api.model.InventoryStructure.Builder<B> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::of(B, java.lang.Object)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.added",
+          "new": "method org.hawkular.inventory.api.model.SyncHash.Tree org.hawkular.inventory.api.model.SyncHash::treeOf(org.hawkular.inventory.api.model.InventoryStructure<?>, org.hawkular.inventory.paths.CanonicalPath, java.util.function.Function<org.hawkular.inventory.paths.RelativePath, org.hawkular.inventory.api.model.Hashes>)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.method.added",
+          "new": "method <R extends org.hawkular.inventory.api.model.Entity.Blueprint> org.hawkular.inventory.api.model.InventoryStructure.Offline<R> org.hawkular.inventory.api.model.InventoryStructure.Offline<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::copy(org.hawkular.inventory.api.model.InventoryStructure<R>, boolean)",
+          "justification": "This class is not to be extended outside of Inventory impl, so this should not matter."
+        },
+        {
+          "code": "java.element.nowDeprecated",
+          "old": "method java.util.stream.Stream<org.hawkular.inventory.api.model.InventoryStructure.FullNode> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getAllChildrenWithAttachments(org.hawkular.inventory.paths.RelativePath)",
+          "new": "method java.util.stream.Stream<org.hawkular.inventory.api.model.InventoryStructure.FullNode> org.hawkular.inventory.api.model.InventoryStructure<Root extends org.hawkular.inventory.api.model.Entity.Blueprint>::getAllChildrenWithAttachments(org.hawkular.inventory.paths.RelativePath)",
+          "justification": "Ugly name deserves deprecation. Replaced by getAllChildNodes."
+        }
+      ]
+    }
+  }
+}

@@ -156,19 +156,29 @@ class FilterVisitor {
                       QueryTranslationState state) {
             String prop = propertyNameBasedOnState(__type, state);
 
+        String typeName = null;
+        String[] typeNames = null;
+
         if (types.getTypes().length == 1) {
             Constants.Type type = Constants.Type.of(types.getTypes()[0]);
-            query.has(prop, type.name());
-            goBackFromEdges(query, state);
-            query.existsAt(discriminator);
-            return;
+            typeName = type.name();
+            query.has(prop, typeName);
+        } else {
+            typeNames =
+                    Stream.of(types.getTypes()).map(st -> Constants.Type.of(st).name()).toArray(String[]::new);
+            query.has(prop, P.within(typeNames));
         }
 
-        String[] typeNames = Stream.of(types.getTypes()).map(t -> Constants.Type.of(t).name())
-                .toArray(String[]::new);
-        query.has(prop, P.within(typeNames));
-
         goBackFromEdges(query, state);
+
+        //another optimization - we know what label the target entity should have, which helps in limiting the "reach"
+        //of the query
+        if (typeNames == null) {
+            query.hasLabel(typeName);
+        } else {
+            query.hasLabel(P.within(typeNames));
+        }
+
         query.existsAt(discriminator);
     }
 
@@ -362,22 +372,17 @@ class FilterVisitor {
                       QueryTranslationState state) {
         String prop = chooseBasedOnDirection(__cp, __targetCp, __sourceCp, state.getComingFrom()).name();
 
-        if (filter.getPaths().length == 1) {
-            //this only works if we are on vertices, so check for that
-            if (prop.equals(__cp.name())) {
-                query.has(T.label, Constants.Type.of(filter.getPaths()[0].getSegment().getElementType())
-                        .identityVertexLabel());
-            }
+        String typeName = null;
+        String[] typeNames = null;
 
+        if (filter.getPaths().length == 1) {
+            typeName = Constants.Type.of(filter.getPaths()[0].getSegment().getElementType())
+                        .identityVertexLabel();
             query.has(prop, filter.getPaths()[0].toString());
         } else {
-            if (prop.equals(__cp.name())) {
-                String[] labels = Stream.of(filter.getPaths())
+            typeNames = Stream.of(filter.getPaths())
                         .map(p -> Constants.Type.of(p.getSegment().getElementType()).identityVertexLabel())
-                        .toArray(String[]::new);
-
-                query.has(T.label, P.within(labels));
-            }
+                    .toArray(String[]::new);
 
             String[] paths = Stream.of(filter.getPaths()).map(Object::toString).toArray(String[]::new);
 
@@ -385,6 +390,13 @@ class FilterVisitor {
         }
 
         goBackFromEdges(query, state);
+
+        if (typeNames == null) {
+            query.hasLabel(typeName);
+        } else {
+            query.hasLabel(P.within(typeNames));
+        }
+
         query.existsAt(discriminator);
     }
 
@@ -563,7 +575,16 @@ class FilterVisitor {
                       @SuppressWarnings("UnusedParameters") With.SameIdentityHash filter,
                       QueryTranslationState state) {
         goBackFromEdges(query, state);
-        query.out(__withIdentityHash.name()).in(__withIdentityHash.name());
+        String sourceLabels = nextRandomLabel();
+        String results = nextRandomLabel();
+        String resultLabels = nextRandomLabel();
+
+        //this used to be query.out(__withIdentityHash).in(__withIdentityHash) but that didn't account for the fact
+        //that we should only find identical entities WITH THE SAME TYPE.. the query below does the trick
+        query.as(sourceLabels).out(__withIdentityHash.name())
+                .in(__withIdentityHash.name()).as(results, resultLabels)
+                .select(sourceLabels, resultLabels).by(T.label).where(sourceLabels, P.eq(resultLabels))
+                .select(results).dedup();
         query.existsAt(discriminator);
     }
 

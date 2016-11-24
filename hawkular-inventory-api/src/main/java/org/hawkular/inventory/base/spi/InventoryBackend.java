@@ -403,6 +403,17 @@ public interface InventoryBackend<E> extends AutoCloseable {
     }
 
     /**
+     * Tries to determine if a transaction retry has a chance of recovering from a condition signified by the provided
+     * throwable.
+     *
+     * @param t a throwable that caused a transaction payload to fail.
+     * @return true if the transaction should be retried, false otherwise
+     */
+    default boolean isTransactionRetryWarranted(Throwable t) {
+        return false;
+    }
+
+    /**
      * Lists the changes of the entity. Note that this is not supported for edges...
      *
      * @param from from when to return the changes

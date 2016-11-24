@@ -216,6 +216,10 @@ public class DelegatingTransaction<E> implements Transaction<E> {
         return tx.requiresRollbackAfterFailure(t);
     }
 
+    @Override public boolean isTransactionRetryWarranted(Throwable t) {
+        return tx.isTransactionRetryWarranted(t);
+    }
+
     @Override public <T extends Entity<?, U>, U extends Entity.Update>
     EntityHistory<T> getHistory(E entity, Class<T> entityType, Instant from, Instant to) {
         return tx.getHistory(entity, entityType, from, to);

@@ -23,8 +23,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.function.BiConsumer;
 
-import javax.annotation.Nullable;
-
 import org.hawkular.inventory.api.Action;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Parents;
@@ -275,7 +273,7 @@ public final class TraversalContext<BE, E extends AbstractElement<?, ?>> {
      *
      * @return a "now"
      */
-    @Nullable Instant declaredNow() {
+    Instant declaredNow() {
         return now;
     }
 

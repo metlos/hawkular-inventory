@@ -123,9 +123,15 @@ final class Util {
                     if (t instanceof InconsistenStateException || tx.requiresRollbackAfterFailure(t)) {
                         tx.rollback();
                     }
-                    throw t;
+
+                    if (tx.isTransactionRetryWarranted(t)) {
+                        Log.LOGGER.debug("Backend deems this error worth a retry.", t);
+                        throw new RetryWarrantedException(t);
+                    } else {
+                        throw t;
+                    }
                 }
-            } catch (CommitFailureException | InconsistenStateException e) {
+            } catch (CommitFailureException | RetryWarrantedException | InconsistenStateException e) {
                 failures++;
 
                 //if the backend fails the commit, we can retry
@@ -464,5 +470,11 @@ final class Util {
 
     public interface TransactionParticipant<BE, E> {
         void execute(BE entityRepresentation, E entity, Transaction<BE> transaction);
+    }
+
+    private static final class RetryWarrantedException extends RuntimeException {
+        public RetryWarrantedException(Throwable cause) {
+            super(cause);
+        }
     }
 }

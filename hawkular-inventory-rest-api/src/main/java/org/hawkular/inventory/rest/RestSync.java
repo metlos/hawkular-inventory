@@ -77,7 +77,12 @@ public class RestSync extends RestBase {
                     + " are not synchronizable.");
         }
 
+        RestApiLogger.LOGGER.commencingSync(cp);
+        long startTime = System.currentTimeMillis();
+
         inventory(uriInfo).inspect(cp, Synced.SingleEntity.class).synchronize(req);
+
+        RestApiLogger.LOGGER.syncFinished(cp, System.currentTimeMillis() - startTime);
 
         return Response.noContent().build();
     }

@@ -113,7 +113,7 @@ final class ComputeHash {
 
         IntermediateHashResult res =
                 ComputeHash.computeHash(rootPath, inventory.getRoot(), ComputeHash.HashableView.of(inventory), ctor,
-                        computeIdentity, computeContent, computeSync, (rp) -> null);
+                        computeIdentity, computeContent, computeSync, rp -> null, rp -> null);
 
         return new Hashes(res.identityHash, res.contentHash, res.syncHash);
     }
@@ -122,7 +122,8 @@ final class ComputeHash {
                                          boolean computeIdentity,
                                          boolean computeContent, boolean computeSync,
                                          Consumer<IntermediateHashContext> onStartChild,
-                                         BiConsumer<IntermediateHashContext, IntermediateHashResult> onEndChild) {
+                                         BiConsumer<IntermediateHashContext, IntermediateHashResult> onEndChild,
+                                         Function<RelativePath, Hashes> hashLoader) {
         ComputeHash.DigestComputingWriter wrt = new ComputeHash.DigestComputingWriter(ComputeHash.newDigest());
 
         ComputeHash.HashConstructor ctor = new ComputeHash.HashConstructor(wrt) {
@@ -142,14 +143,16 @@ final class ComputeHash {
                 computeContent, computeSync,
                 //we don't want the root element in the relative paths of the children so that they are easily
                 //appendable to the root.
-                (rp) -> rp.slide(1, 0)
+                (rp) -> rp.slide(1, 0),
+                hashLoader
         );
 
     }
 
     static IntermediateHashResult computeHash(CanonicalPath entityPath, Blueprint entity, HashableView structure,
                                               HashConstructor bld, boolean compIdentity, boolean compContent,
-                                              boolean compSync, Function<RelativePath, RelativePath> pathCompleter) {
+                                              boolean compSync, Function<RelativePath, RelativePath> pathCompleter,
+                                              Function<RelativePath, Hashes> hashLoader) {
 
         Class<?> entityType = Inventory.types().byBlueprint(entity.getClass()).getElementType();
 
@@ -347,7 +350,7 @@ final class ComputeHash {
                         targetType);
 
                 if (targetPath.isCanonical()) {
-                    targetPath = targetPath.toCanonicalPath().relativeTo(entityPath);
+                    targetPath = targetPath.toCanonicalPath().relativeTo(ctx.origin);
                 }
 
                 return targetPath.toRelativePath();
@@ -357,28 +360,38 @@ final class ComputeHash {
                                                 Consumer<IntermediateHashContext> hashComputation) {
                 IntermediateHashContext childCtx = context.progress(root);
                 bld.startChild(childCtx);
-                hashComputation.accept(childCtx);
 
-                String identityHash = null;
-                String contentHash = null;
-                String syncHash = null;
+                Hashes loadedHashes = hashLoader.apply(childCtx.root.slide(1, 0));
+
+                boolean compute = loadedHashes == null
+                        || (computeIdentity && loadedHashes.getIdentityHash() == null)
+                        || (computeContent && loadedHashes.getContentHash() == null)
+                        || (computeSync && loadedHashes.getSyncHash() == null);
+
+                if (compute) {
+                    hashComputation.accept(childCtx);
+                }
+
+                String identityHash = loadedHashes == null ? null : loadedHashes.getIdentityHash();
+                String contentHash =  loadedHashes == null ? null : loadedHashes.getContentHash();
+                String syncHash =  loadedHashes == null ? null : loadedHashes.getSyncHash();
 
                 DigestComputingWriter digestor = bld.getDigestor();
-                if (computeIdentity) {
+                if (computeIdentity && identityHash == null) {
                     digestor.reset();
                     digestor.append(childCtx.identity);
                     digestor.close();
                     identityHash = digestor.digest();
                 }
 
-                if (computeContent) {
+                if (computeContent && contentHash == null) {
                     digestor.reset();
                     digestor.append(childCtx.content);
                     digestor.close();
                     contentHash = digestor.digest();
                 }
 
-                if (computeSync) {
+                if (computeSync && syncHash == null) {
                     digestor.reset();
                     digestor.append(identityHash);
                     digestor.append(contentHash);
@@ -403,7 +416,8 @@ final class ComputeHash {
             private void appendEntityIdentity(Entity.Blueprint child, IntermediateHashContext ctx) {
                 ctx.identity.append(child.accept(this, ctx).identityHash);
             }
-        }, new IntermediateHashContext(RelativePath.empty().get()));
+        }, new IntermediateHashContext(entityPath == null ? null : entityPath.up(),
+                RelativePath.empty().get()));
     }
 
     static void appendIdentity(String data, IntermediateHashContext ctx) {
@@ -535,48 +549,43 @@ final class ComputeHash {
 
         static HashableView of(InventoryStructure<?> structure) {
             return new HashableView() {
+                private DataEntity.Blueprint<?> getData(RelativePath.Extender parentPath, DataRole dataRole) {
+                    Blueprint b =
+                            structure.get(parentPath.extend(SegmentType.d, dataRole.name()).get());
+
+                    return b == null ? dummyDataBlueprint(dataRole) : (DataEntity.Blueprint<?>) b;
+                }
+
                 @Override
                 public DataEntity.Blueprint<?> getConfiguration(RelativePath rootPath,
                                                                 Resource.Blueprint parentResource) {
-                    RelativePath resourcePath = rootPath.modified().extend(SegmentType.r, parentResource.getId())
-                            .get().slide(1, 0);
+                    RelativePath.Extender resourcePath = rootPath.modified()
+                            .extend(SegmentType.r, parentResource.getId()).get().slide(1, 0).modified();
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(resourcePath, DataEntity.class)) {
-                        return s.filter(d -> configuration.equals(d.getRole()))
-                                .findFirst().orElse(dummyDataBlueprint(configuration));
-                    }
+                    return getData(resourcePath, configuration);
                 }
 
                 @Override public DataEntity.Blueprint<?> getConfigurationSchema(ResourceType.Blueprint rt) {
-                    RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
-                            : RelativePath.to().resourceType(rt.getId()).get();
+                    RelativePath.Extender p = rt.equals(structure.getRoot()) ? RelativePath.empty()
+                            : RelativePath.empty().extend(SegmentType.rt, rt.getId());
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
-                            .filter(d -> configurationSchema.equals(d.getRole()))) {
-                        return s.findFirst().orElse(dummyDataBlueprint(configurationSchema));
-                    }
+                    return getData(p, configurationSchema);
                 }
 
                 @Override
                 public DataEntity.Blueprint<?> getConnectionConfiguration(RelativePath root,
                                                                           Resource.Blueprint parentResource) {
-                    RelativePath resourcePath = root.modified().extend(SegmentType.r, parentResource.getId())
-                            .get().slide(1, 0);
+                    RelativePath.Extender resourcePath = root.modified().extend(SegmentType.r, parentResource.getId())
+                            .get().slide(1, 0).modified();
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(resourcePath, DataEntity.class)
-                            .filter(d -> connectionConfiguration.equals(d.getRole()))) {
-                        return s.findFirst().orElse(dummyDataBlueprint(connectionConfiguration));
-                    }
+                    return getData(resourcePath, connectionConfiguration);
                 }
 
                 @Override public DataEntity.Blueprint<?> getConnectionConfigurationSchema(ResourceType.Blueprint rt) {
-                    RelativePath p = rt.equals(structure.getRoot()) ? RelativePath.empty().get()
-                            : RelativePath.to().resourceType(rt.getId()).get();
+                    RelativePath.Extender p = rt.equals(structure.getRoot()) ? RelativePath.empty()
+                            : RelativePath.empty().extend(SegmentType.rt, rt.getId());
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
-                            .filter(d -> connectionConfigurationSchema.equals(d.getRole()))) {
-                        return s.findFirst().orElse(dummyDataBlueprint(connectionConfigurationSchema));
-                    }
+                    return getData(p, connectionConfigurationSchema);
                 }
 
                 @Override public List<Metric.Blueprint> getFeedMetrics() {
@@ -611,13 +620,10 @@ final class ComputeHash {
                 @Override
                 public DataEntity.Blueprint<?> getParameterTypes(RelativePath rootResourceType,
                                                                  OperationType.Blueprint ot) {
-                    RelativePath p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
-                            .slide(1, 0);
+                    RelativePath.Extender p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
+                            .slide(1, 0).modified();
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
-                            .filter(d -> parameterTypes.equals(d.getRole()))) {
-                        return s.findFirst().orElse(dummyDataBlueprint(parameterTypes));
-                    }
+                    return getData(p, parameterTypes);
                 }
 
                 @Override
@@ -650,13 +656,10 @@ final class ComputeHash {
 
                 @Override public DataEntity.Blueprint<?> getReturnType(RelativePath rootResourceType,
                                                                        OperationType.Blueprint ot) {
-                    RelativePath p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
-                            .slide(1, 0);
+                    RelativePath.Extender p = rootResourceType.modified().extend(SegmentType.ot, ot.getId()).get()
+                            .slide(1, 0).modified();
 
-                    try (Stream<DataEntity.Blueprint<?>> s = structure.getChildren(p, DataEntity.class)
-                            .filter(d -> returnType.equals(d.getRole()))) {
-                        return s.findFirst().orElse(dummyDataBlueprint(returnType));
-                    }
+                    return getData(p, returnType);
                 }
             };
         }
@@ -806,18 +809,23 @@ final class ComputeHash {
     }
 
     static class IntermediateHashContext {
+        final CanonicalPath origin;
         final RelativePath root;
         final StringBuilder identity = new StringBuilder();
         final StringBuilder content = new StringBuilder();
         final StringBuilder sync = new StringBuilder();
 
-        IntermediateHashContext(RelativePath root) {
+        IntermediateHashContext(CanonicalPath origin, RelativePath root) {
+            this.origin = origin;
             this.root = root;
         }
 
         IntermediateHashContext progress(Entity.Blueprint bl) {
-            return new IntermediateHashContext(root.modified().extend(Blueprint.getSegmentTypeOf(bl),
-                    bl.getId()).get());
+            SegmentType st = Blueprint.getSegmentTypeOf(bl);
+            String id = bl.getId();
+
+            return new IntermediateHashContext(origin == null ? null : origin.modified().extend(st, id).get(),
+                    root.modified().extend(st, id).get());
         }
     }
 

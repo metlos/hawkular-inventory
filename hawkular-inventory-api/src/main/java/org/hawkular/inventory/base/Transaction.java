@@ -173,6 +173,17 @@ public interface Transaction<E> {
         return true;
     }
 
+    /**
+     * Tries to determine if a transaction retry has a chance of recovering from a condition signified by the provided
+     * throwable.
+     *
+     * @param t a throwable that caused a transaction payload to fail.
+     * @return true if the transaction should be retried, false otherwise
+     */
+    default boolean isTransactionRetryWarranted(Throwable t) {
+        return false;
+    }
+
     <T extends Entity<?, U>, U extends Entity.Update>
     EntityHistory<T> getHistory(E entity, Class<T> entityType, Instant from, Instant to);
 
