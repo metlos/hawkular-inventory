@@ -47,19 +47,30 @@ final class ElementWrappingStrategy implements TraversalStrategy.DecorationStrat
                     .orElseThrow(() ->
                             new IllegalStateException("Cannot wrap elements to support transactions without a graph."));
 
-            Object element = tr.get();
-
-            if (element instanceof Edge) {
-                return new TransactionLockingEdge((Edge) element, graph);
-            } else if (element instanceof Vertex) {
-                return new TransactionLockingVertex((Vertex) element, graph);
-            } else if (element instanceof VertexProperty) {
-                return new TransactionLockingVertexProperty<>((VertexProperty<?>) element, graph);
-            } else if (element instanceof Property) {
-                return new TransactionLockingProperty<>((Property<?>) element, graph);
-            } else {
-                return element;
-            }
+            return wrap(tr.get(), graph);
         }));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T, U extends T> T wrap(U object, TransactionLockingGraph graph) {
+        if (object instanceof TransactionLockingEdge) {
+            return object;
+        } else if (object instanceof TransactionLockingVertex) {
+            return object;
+        } else if (object instanceof TransactionLockingVertexProperty) {
+            return object;
+        } else if (object instanceof TransactionLockingProperty) {
+            return object;
+        } else if (object instanceof Edge) {
+            return (T) new TransactionLockingEdge((Edge) object, graph);
+        } else if (object instanceof Vertex) {
+            return (T) new TransactionLockingVertex((Vertex) object, graph);
+        } else if (object instanceof VertexProperty) {
+            return (T) new TransactionLockingVertexProperty<>((VertexProperty<?>) object, graph);
+        } else if (object instanceof Property) {
+            return (T) new TransactionLockingProperty<>((Property<?>) object, graph);
+        } else {
+            return object;
+        }
     }
 }

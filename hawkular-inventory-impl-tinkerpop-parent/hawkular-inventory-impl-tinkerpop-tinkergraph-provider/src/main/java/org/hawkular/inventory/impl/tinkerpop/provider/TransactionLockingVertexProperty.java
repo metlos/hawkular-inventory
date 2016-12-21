@@ -63,6 +63,7 @@ final class TransactionLockingVertexProperty<T> extends TransactionLockingProper
 
     @Override public <V> Property<V> property(String key, V value) {
         graph.tx().lockForWriting();
+        //we don't really support metadata properties, so no need register the mutation
         return new TransactionLockingProperty<>(getBaseProperty().property(key, value), graph);
     }
 

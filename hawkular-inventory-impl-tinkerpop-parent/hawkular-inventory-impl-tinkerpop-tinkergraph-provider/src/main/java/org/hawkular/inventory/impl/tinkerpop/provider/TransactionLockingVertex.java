@@ -22,8 +22,10 @@ import java.util.Set;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedProperty;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
 
 /**
@@ -49,9 +51,23 @@ final class TransactionLockingVertex implements Vertex, WrappedVertex<Vertex> {
 
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value,
             Object... keyValues) {
+        //we don't support meta properties
+        if (keyValues.length > 0) {
+            throw new UnsupportedOperationException("Meta properties not supported.");
+        }
+
         graph.tx().lockForWriting();
-        return new TransactionLockingVertexProperty<>(getBaseVertex().property(cardinality, key, value, keyValues),
-                graph);
+
+        Property<V> old = new DetachedProperty<>(key, getBaseVertex().<V>property(key).orElse(null), getBaseVertex());
+        VertexProperty<V> newP = getBaseVertex().property(cardinality, key, value, keyValues);
+
+        VertexProperty<V> ret = new TransactionLockingVertexProperty<>(newP, graph);
+
+        Log.LOG.debugf("Updating property of %s from %s to %s", getBaseVertex(), old, newP);
+
+        graph.tx().registerMutation(old, newP);
+
+        return ret;
     }
 
     public Set<String> keys() {
@@ -60,11 +76,26 @@ final class TransactionLockingVertex implements Vertex, WrappedVertex<Vertex> {
 
     public Edge addEdge(String label, Vertex vertex, Object... keyValues) {
         graph.tx().lockForWriting();
-        return new TransactionLockingEdge(getBaseVertex().addEdge(label, Wrapper.unwrap(vertex), keyValues), graph);
+        Edge newE = getBaseVertex().addEdge(label, Wrapper.unwrap(vertex), keyValues);
+        Edge ret = new TransactionLockingEdge(newE, graph);
+
+        Log.LOG.debugf("Added edge %s from %s to %s", newE, getBaseVertex(), Wrapper.unwrap(vertex));
+
+        graph.tx().registerMutation(null, newE);
+        return ret;
     }
 
     public void remove() {
         graph.tx().lockForWriting();
+        getBaseVertex().edges(Direction.BOTH).forEachRemaining(e -> {
+            Log.LOG.debugf("Marking %s as removed before deleting %s", e, getBaseVertex());
+            graph.tx().registerMutation(e, null);
+        });
+
+        Log.LOG.debugf("Removing %s", getBaseVertex());
+
+        graph.tx().registerMutation(getBaseVertex(), null);
+
         getBaseVertex().remove();
     }
 
@@ -102,7 +133,16 @@ final class TransactionLockingVertex implements Vertex, WrappedVertex<Vertex> {
 
     public <V> VertexProperty<V> property(String key, V value) {
         graph.tx().lockForWriting();
-        return new TransactionLockingVertexProperty<>(getBaseVertex().property(key, value), graph);
+
+        Property<V> old = new DetachedProperty<>(key, getBaseVertex().<V>property(key).orElse(null), getBaseVertex());
+        VertexProperty<V> newP = getBaseVertex().property(key, value);
+        VertexProperty<V> ret = new TransactionLockingVertexProperty<>(newP, graph);
+
+        Log.LOG.debugf("Updating property of %s from %s to %s", getBaseVertex(), old, newP);
+
+        graph.tx().registerMutation(old, newP);
+
+        return ret;
     }
 
     public <V> V value(String key) throws NoSuchElementException {
@@ -115,7 +155,17 @@ final class TransactionLockingVertex implements Vertex, WrappedVertex<Vertex> {
 
     public <V> VertexProperty<V> property(String key, V value, Object... keyValues) {
         graph.tx().lockForWriting();
-        return new TransactionLockingVertexProperty<>(getBaseVertex().property(key, value, keyValues), graph);
+
+        @SuppressWarnings("unchecked")
+        Property<V> old = new DetachedProperty<>(key, (V) getBaseVertex().property(key).orElse(null), getBaseVertex());
+        VertexProperty<V> newP = getBaseVertex().property(key, value, keyValues);
+        VertexProperty<V> ret = new TransactionLockingVertexProperty<>(newP, graph);
+
+        Log.LOG.debugf("Updating property of %s from %s to %s", getBaseVertex(), old, newP);
+
+        graph.tx().registerMutation(old, newP);
+
+        return ret;
     }
 
     @Override public Vertex getBaseVertex() {

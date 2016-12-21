@@ -25,7 +25,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -62,16 +64,8 @@ final class TransactionLockingGraph implements Graph, WrappedGraph<TinkerGraph> 
         graph.dropIndex(key, elementClass);
     }
 
-    public static TinkerGraph open() {
-        return TinkerGraph.open();
-    }
-
     public void clear() {
         graph.clear();
-    }
-
-    public static TinkerGraph open(org.apache.commons.configuration.Configuration configuration) {
-        return TinkerGraph.open(configuration);
     }
 
     public <E extends Element> Set<String> getIndexedKeys(Class<E> elementClass) {
@@ -80,7 +74,13 @@ final class TransactionLockingGraph implements Graph, WrappedGraph<TinkerGraph> 
 
     @Override public Vertex addVertex(Object... keyValues) {
         tx().lockForWriting();
-        return new TransactionLockingVertex(graph.addVertex(keyValues), this);
+        Vertex v = graph.addVertex(keyValues);
+
+        Log.LOG.debugf("Added %s", v);
+
+        tx().registerMutation(null, v);
+
+        return new TransactionLockingVertex(v, this);
     }
 
     @Override public void close() {
@@ -107,11 +107,98 @@ final class TransactionLockingGraph implements Graph, WrappedGraph<TinkerGraph> 
     }
 
     @Override public Iterator<Edge> edges(Object... edgeIds) {
-        return graph.edges(edgeIds);
+        return Wrapper.wrapEdges(this, graph.edges(edgeIds));
     }
 
     @Override public Features features() {
-        return graph.features();
+        return new Features() {
+            @Override public GraphFeatures graph() {
+                return new GraphFeatures() {
+                    @Override
+                    public boolean supportsConcurrentAccess() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean supportsTransactions() {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean supportsThreadedTransactions() {
+                        return false;
+                    }
+                };
+            }
+
+            @Override public VertexFeatures vertex() {
+                return new VertexFeatures() {
+                    @Override public VertexProperty.Cardinality getCardinality(String key) {
+                        return getBaseGraph().features().vertex().getCardinality(key);
+                    }
+
+                    @Override public boolean supportsAddVertices() {
+                        return getBaseGraph().features().vertex().supportsAddVertices();
+                    }
+
+                    @Override public boolean supportsRemoveVertices() {
+                        return getBaseGraph().features().vertex().supportsRemoveVertices();
+                    }
+
+                    @Override public boolean supportsMultiProperties() {
+                        return false;
+                    }
+
+                    @Override public boolean supportsMetaProperties() {
+                        return false;
+                    }
+
+                    @Override public VertexPropertyFeatures properties() {
+                        return getBaseGraph().features().vertex().properties();
+                    }
+
+                    @Override public boolean supportsAddProperty() {
+                        return getBaseGraph().features().vertex().supportsAddProperty();
+                    }
+
+                    @Override public boolean supportsRemoveProperty() {
+                        return getBaseGraph().features().vertex().supportsRemoveProperty();
+                    }
+
+                    @Override public boolean supportsUserSuppliedIds() {
+                        return getBaseGraph().features().vertex().supportsUserSuppliedIds();
+                    }
+
+                    @Override public boolean supportsNumericIds() {
+                        return getBaseGraph().features().vertex().supportsNumericIds();
+                    }
+
+                    @Override public boolean supportsStringIds() {
+                        return getBaseGraph().features().vertex().supportsStringIds();
+                    }
+
+                    @Override public boolean supportsUuidIds() {
+                        return getBaseGraph().features().vertex().supportsUuidIds();
+                    }
+
+                    @Override public boolean supportsCustomIds() {
+                        return getBaseGraph().features().vertex().supportsCustomIds();
+                    }
+
+                    @Override public boolean supportsAnyIds() {
+                        return getBaseGraph().features().vertex().supportsAnyIds();
+                    }
+
+                    @Override public boolean willAllowId(Object id) {
+                        return getBaseGraph().features().vertex().willAllowId(id);
+                    }
+                };
+            }
+
+            @Override public EdgeFeatures edge() {
+                return getBaseGraph().features().edge();
+            }
+        };
     }
 
     @Override public String toString() {
@@ -127,12 +214,11 @@ final class TransactionLockingGraph implements Graph, WrappedGraph<TinkerGraph> 
     }
 
     @Override public Iterator<Vertex> vertices(Object... vertexIds) {
-        return graph.vertices(vertexIds);
+        return Wrapper.wrapVertices(this, graph.vertices(vertexIds));
     }
 
     @Override public Vertex addVertex(String label) {
-        tx().lockForWriting();
-        return new TransactionLockingVertex(graph.addVertex(label), this);
+        return addVertex(T.label, label);
     }
 
     @Override public <I extends Io> I io(Io.Builder<I> builder) {

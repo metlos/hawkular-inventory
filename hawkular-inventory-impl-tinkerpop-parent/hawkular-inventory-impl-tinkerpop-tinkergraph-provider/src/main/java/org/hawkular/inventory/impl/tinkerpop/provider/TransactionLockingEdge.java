@@ -24,6 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedProperty;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedEdge;
 
 /**
@@ -84,7 +85,16 @@ final class TransactionLockingEdge implements Edge, WrappedEdge<Edge> {
     }
 
     public <V> Property<V> property(String key, V value) {
-        return new TransactionLockingProperty<>(getBaseEdge().property(key, value), graph);
+        graph.tx().lockForWriting();
+        Property<V> old = new DetachedProperty<>(key, getBaseEdge().<V>property(key).orElse(null), getBaseEdge());
+        Property<V> newP = getBaseEdge().property(key, value);
+        Property<V> ret = new TransactionLockingProperty<>(newP, graph);
+
+        Log.LOG.debugf("Updating property of %s from %s to %s", getBaseEdge(), old, newP);
+
+        graph.tx().registerMutation(old, newP);
+
+        return ret;
     }
 
     public <V> V value(String key) throws NoSuchElementException {
@@ -93,6 +103,10 @@ final class TransactionLockingEdge implements Edge, WrappedEdge<Edge> {
 
     public void remove() {
         graph.tx().lockForWriting();
+
+        Log.LOG.debugf("Removing %s", getBaseEdge());
+
+        graph.tx().registerMutation(getBaseEdge(), null);
         getBaseEdge().remove();
     }
 

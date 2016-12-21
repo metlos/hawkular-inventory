@@ -71,7 +71,12 @@ class TransactionLockingProperty<T> implements Property<T>, WrappedProperty<Prop
 
     @Override public void remove() {
         graph.tx().lockForWriting();
-        property.remove();
+
+        Log.LOG.debugf("Removing %s", getBaseProperty());
+
+        graph.tx().registerMutation(getBaseProperty(), null);
+
+        getBaseProperty().remove();
     }
 
     @Override public Property<T> getBaseProperty() {
