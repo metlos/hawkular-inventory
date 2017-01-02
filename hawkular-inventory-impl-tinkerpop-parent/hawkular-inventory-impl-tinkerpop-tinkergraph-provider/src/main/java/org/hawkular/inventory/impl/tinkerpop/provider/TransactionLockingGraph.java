@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,10 +16,18 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
+import java.io.File;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.MapConfiguration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -36,10 +44,13 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  * @author Lukas Krejci
  * @since 1.2.0
  */
-final class TransactionLockingGraph implements Graph, WrappedGraph<TinkerGraph> {
+public final class TransactionLockingGraph implements Graph, WrappedGraph<TinkerGraph> {
+    private static final int DEFAULT_FLUSH_INTERVAL = 60 * 60; //1 hour
     private final ReentrantReadWriteLock txLock = new ReentrantReadWriteLock();
-    private final TinkerGraph graph;
-    private final LockingTransaction tx = new LockingTransaction(this, txLock);
+    private TinkerGraph graph;
+    private final LockingTransaction tx;
+    private final Configuration configuration;
+    private final ScheduledExecutorService compactionService;
 
     static {
         TraversalStrategies defaultStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class);
@@ -48,8 +59,47 @@ final class TransactionLockingGraph implements Graph, WrappedGraph<TinkerGraph> 
                 defaultStrategies.addStrategies(new TransactionLockingStrategy(), new ElementWrappingStrategy()));
     }
 
-    TransactionLockingGraph(org.apache.commons.configuration.Configuration configuration) {
+    TransactionLockingGraph(Configuration configuration) {
+        String location = configuration.getString(TinkerGraphProvider.PropertyKey.LOCATION.getPropertyName());
+        if (location == null) {
+            throw new IllegalArgumentException("TransactionLockingGraph needs a location to persist data.");
+        }
+
+        File dataDir = new File(location);
+        File graphFile = new File(dataDir, "graph");
+
+        if (!dataDir.exists() && !dataDir.mkdirs()) {
+            throw new IllegalStateException("Failed to create directory for graph storage.");
+        }
+
+        //make sure we have a writeable configuration...
+        MapConfiguration copy = new MapConfiguration(new HashMap<>());
+        Iterator<String> it = configuration.getKeys();
+        while (it.hasNext()) {
+            String key = it.next();
+            copy.addProperty(key, configuration.getProperty(key));
+        }
+        configuration = copy;
+
+        configuration.setProperty(TinkerGraph.GREMLIN_TINKERGRAPH_GRAPH_LOCATION, graphFile.getAbsolutePath());
+        configuration.setProperty(TinkerGraph.GREMLIN_TINKERGRAPH_GRAPH_FORMAT, "gryo");
+
+        this.configuration = configuration;
+
         graph = TinkerGraph.open(configuration);
+        tx = new LockingTransaction(this, txLock, dataDir);
+
+        if (tx.compactCommitLog()) {
+            this.graph = TinkerGraph.open(configuration);
+        }
+
+        //don't allow more compactions to run simultaneously by using a single-threaded executor
+        compactionService = Executors.newSingleThreadScheduledExecutor();
+
+        int interval = configuration.getInt(TinkerGraphProvider.PropertyKey.COMPACTION_INTERVAL.getPropertyName(),
+                DEFAULT_FLUSH_INTERVAL);
+
+        compactionService.scheduleAtFixedRate(() -> flushToDisk(true), interval, interval, TimeUnit.SECONDS);
     }
 
     @Override public TinkerGraph getBaseGraph() {
@@ -84,6 +134,17 @@ final class TransactionLockingGraph implements Graph, WrappedGraph<TinkerGraph> 
     }
 
     @Override public void close() {
+        compactionService.shutdown();
+
+        int interval = configuration.getInt(TinkerGraphProvider.PropertyKey.COMPACTION_INTERVAL.getPropertyName(),
+                DEFAULT_FLUSH_INTERVAL);
+        try {
+            compactionService.awaitTermination(interval, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            //set the flag, but finish our job anyway
+            Thread.currentThread().interrupt();
+        }
+
         while (txLock.getReadHoldCount() > 0) {
             txLock.readLock().unlock();
         }
@@ -91,7 +152,8 @@ final class TransactionLockingGraph implements Graph, WrappedGraph<TinkerGraph> 
         while (txLock.getWriteHoldCount() > 0) {
             txLock.writeLock().unlock();
         }
-        graph.close();
+
+        flushToDisk(false);
     }
 
     @Override public GraphComputer compute() {
@@ -223,5 +285,45 @@ final class TransactionLockingGraph implements Graph, WrappedGraph<TinkerGraph> 
 
     @Override public <I extends Io> I io(Io.Builder<I> builder) {
         return graph.io(builder);
+    }
+
+    /**
+     * This method assumes it is NOT run as part of normal transaction processing but as a "standalone" method
+     * in a separate thread.
+     */
+    private void flushToDisk(boolean reopen) {
+        try {
+            txLock.writeLock().lock();
+
+            Log.LOG.runningPeriodicFlushToDisk();
+
+            long startTime = System.nanoTime();
+
+            //right now, the in-memory graph contains all the committed state, so we can just persist the graph and
+            //delete all the commit log files.
+
+            this.graph.close();
+            List<File> toDel = tx.getNonCompactedCommitFiles();
+
+            Log.LOG.debugf("Deleting %d commit log files.", toDel.size());
+
+            toDel.forEach(File::delete);
+
+            if (Log.LOG.isDebugEnabled()) {
+                Log.LOG.debugf("Seeing %d commit files after flush. This should always be 0.",
+                        tx.getNonCompactedCommitFiles().size());
+            }
+
+            if (reopen) {
+                this.graph = TinkerGraph.open(configuration);
+            }
+
+            Log.LOG.finishedPeriodicFlush((System.nanoTime() - startTime) / 1_000_000);
+
+            txLock.writeLock().unlock();
+        } catch (Throwable t) {
+            Log.LOG.periodicFlushFailed(t.getMessage(), t);
+            throw t;
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -25,7 +26,9 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
+import org.apache.commons.configuration.MapConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.hawkular.inventory.api.Configuration;
 import org.hawkular.inventory.api.Inventory;
@@ -37,19 +40,46 @@ import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.Tenant;
 import org.hawkular.inventory.api.test.AbstractBaseInventoryTestsuite;
 import org.hawkular.inventory.base.BaseInventory;
+import org.hawkular.inventory.impl.tinkerpop.TinkerpopInventory;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * @author Lukas Krejci
  * @since 0.11.0
  */
-abstract class AbstractTinkerGraphTest extends AbstractBaseInventoryTestsuite<Element> {
+public final class TinkerGraphTest extends AbstractBaseInventoryTestsuite<Element> {
+    private static TinkerpopInventory INVENTORY;
+
+    @BeforeClass
+    public static void setup() throws Exception {
+        String configPath = System.getProperty("testsuite.config");
+        System.setProperty("graph.config", configPath);
+        INVENTORY = new TinkerpopInventory();
+        setupNewInventory(INVENTORY);
+        setupData(INVENTORY);
+    }
+
+    @AfterClass
+    public static void teardownData() throws Exception {
+        teardownData(INVENTORY);
+        teardown(INVENTORY);
+    }
+
+    @Override
+    protected BaseInventory<Element> getInventoryForTest() {
+        return INVENTORY;
+    }
 
     protected static void teardown(BaseInventory<?> inventory) throws Exception {
         String pathName = inventory.getConfiguration().getProperty(new DirProperty(), null);
+        deleteDir(pathName);
+    }
 
-        Path path = Paths.get(pathName);
+    private static void deleteDir(String dirName) throws IOException {
+        Path path = Paths.get(dirName);
 
         if (!path.toFile().exists()) {
             return;
@@ -73,7 +103,7 @@ abstract class AbstractTinkerGraphTest extends AbstractBaseInventoryTestsuite<El
     private static final class DirProperty implements Configuration.Property {
 
         @Override public String getPropertyName() {
-            return "blueprints.tg.directory";
+            return "hawkular.inventory.tinkerpop.data.location";
         }
 
         @Override public List<String> getSystemPropertyNames() {
@@ -214,6 +244,81 @@ abstract class AbstractTinkerGraphTest extends AbstractBaseInventoryTestsuite<El
             if (inventory.tenants().get(tenantId).exists()) {
                 inventory.tenants().delete(tenantId);
             }
+        }
+    }
+
+    @Test
+    public void testCompactionOnClose() throws Exception {
+        File location = new File(".", "__compactOnCloseTest");
+
+        try {
+            Properties props = new Properties();
+
+            props.setProperty("hawkular.inventory.tinkerpop.data.location", location.getAbsolutePath());
+            props.setProperty("hawkular.inventory.tinkerpop.compactionInterval", "3600");
+
+            TransactionLockingGraph g = new TransactionLockingGraph(new MapConfiguration(props));
+
+            g.tx().open();
+            g.addVertex("test");
+            g.tx().commit();
+            g.tx().close();
+
+            long nofCommitFiles = Files.list(location.toPath()).filter(p -> p.toFile().getName().startsWith("commit-"))
+                    .count();
+
+            Assert.assertEquals(1, nofCommitFiles);
+
+            g.close();
+
+            nofCommitFiles = Files.list(location.toPath()).filter(p -> p.toFile().getName().startsWith("commit-"))
+                    .count();
+
+            Assert.assertEquals(0, nofCommitFiles);
+
+            g = new TransactionLockingGraph(new MapConfiguration(props));
+
+            nofCommitFiles = Files.list(location.toPath()).filter(p -> p.toFile().getName().startsWith("commit-"))
+                    .count();
+
+            Assert.assertEquals(0, nofCommitFiles);
+        } finally {
+            deleteDir(location.getAbsolutePath());
+        }
+    }
+
+    @Test
+    public void testPeriodicCompaction() throws Exception {
+        File location = new File(".", "__periodicCompactionTest");
+
+        try {
+            Properties props = new Properties();
+
+            props.setProperty("hawkular.inventory.tinkerpop.data.location", location.getAbsolutePath());
+            props.setProperty("hawkular.inventory.tinkerpop.compactionInterval", "1");
+
+            TransactionLockingGraph g = new TransactionLockingGraph(new MapConfiguration(props));
+
+            g.tx().open();
+            g.addVertex("test");
+            g.tx().commit();
+            g.tx().close();
+
+            long nofCommitFiles = Files.list(location.toPath()).filter(p -> p.toFile().getName().startsWith("commit-"))
+                    .count();
+
+            Assert.assertTrue(nofCommitFiles >= 0);
+
+            Thread.sleep(1100);
+
+            nofCommitFiles = Files.list(location.toPath()).filter(p -> p.toFile().getName().startsWith("commit-"))
+                    .count();
+
+            Assert.assertEquals(0, nofCommitFiles);
+
+            g.close();
+        } finally {
+            deleteDir(location.getAbsolutePath());
         }
     }
 }

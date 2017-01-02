@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,12 +16,20 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
@@ -33,35 +41,36 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
-import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedEdge;
-import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedProperty;
-import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertex;
-import org.javatuples.Pair;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
 
 /**
  * @author Lukas Krejci
  * @since 1.2.0
  */
 final class LockingTransaction extends AbstractTransaction {
+    private static final AtomicLong CNT = new AtomicLong();
+
     private final ReentrantReadWriteLock txLock;
     private final List<MutationEvent> mutations = new ArrayList<>();
     private final TransactionLockingGraph graph;
+    private final File dataDir;
 
-    public LockingTransaction(TransactionLockingGraph graph, ReentrantReadWriteLock txLock) {
+    LockingTransaction(TransactionLockingGraph graph, ReentrantReadWriteLock txLock, File dataDir) {
         super(graph);
         this.graph = graph;
         this.txLock = txLock;
+        this.dataDir = dataDir;
     }
 
-    public void registerMutation(Element oldValue, Element newValue) {
+    void registerMutation(Element oldValue, Element newValue) {
         mutations.add(new MutationEvent(copyOf(oldValue), copyOf(newValue)));
     }
 
-    public <T> void registerMutation(Property<T> oldValue, Property<T> newValue) {
+    <T> void registerMutation(Property<T> oldValue, Property<T> newValue) {
         mutations.add(new MutationEvent(copyOf(oldValue), copyOf(newValue)));
     }
 
-    public void lockForWriting() {
+    void lockForWriting() {
         boolean lockForRead = txLock.getReadLockCount() > 0;
         boolean lockedForWrite = txLock.getWriteHoldCount() > 0;
 
@@ -76,6 +85,61 @@ final class LockingTransaction extends AbstractTransaction {
         if (!lockedForWrite) {
             txLock.writeLock().lock();
         }
+    }
+
+    List<File> getNonCompactedCommitFiles() {
+        File[] files = dataDir.listFiles(child -> child.getName().startsWith("commit-"));
+        if (files == null) {
+            return Collections.emptyList();
+        } else {
+            return Arrays.asList(files);
+        }
+    }
+
+    /**
+     * @return true if the graph has been modified and needs to be reopened, false otherwise
+     */
+    boolean compactCommitLog() {
+        int prefixLength = "commit-".length();
+
+        List<File> commitFiles = getNonCompactedCommitFiles();
+        if (commitFiles.isEmpty()) {
+            return false;
+        }
+
+        Log.LOG.compactingCommitLog(commitFiles.size());
+
+        commitFiles.sort((a, b) -> {
+
+            String aSuffix = a.getName().substring(prefixLength);
+            String bSuffix = b.getName().substring(prefixLength);
+
+            Long aOrd = Long.parseLong(aSuffix);
+            Long bOrd = Long.parseLong(bSuffix);
+
+            long diff = aOrd - bOrd;
+
+            return diff > 0 ? 1 : (diff == 0 ? 0 : -1);
+        });
+
+        for (File f : commitFiles) {
+            Log.LOG.debugf("Processing commit log %s", f);
+
+            try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(f))) {
+                @SuppressWarnings("unchecked")
+                List<MutationEvent> commitEvents = (List<MutationEvent>) in.readObject();
+
+                applyMutations(commitEvents);
+            } catch (IOException | ClassNotFoundException e) {
+                throw new IllegalStateException("Cannot read the commit log.", e);
+            }
+        }
+
+        graph.getBaseGraph().close();
+
+        commitFiles.forEach(File::delete);
+
+        return true;
     }
 
     @Override protected void doOpen() {
@@ -94,6 +158,7 @@ final class LockingTransaction extends AbstractTransaction {
     }
 
     @Override protected void doCommit() throws TransactionException {
+        persistMutations();
         mutations.clear();
         Log.LOG.debug("Committed a transaction");
     }
@@ -144,6 +209,17 @@ final class LockingTransaction extends AbstractTransaction {
         return txLock.getReadHoldCount() > 0 || txLock.getWriteHoldCount() > 0;
     }
 
+    private void persistMutations() {
+        if (!mutations.isEmpty()) {
+            File commitLog = new File(dataDir, "commit-" + CNT.incrementAndGet());
+            try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(commitLog))) {
+                out.writeObject(mutations);
+            } catch (IOException e) {
+                throw new IllegalStateException("Cannot persist the commit.", e);
+            }
+        }
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     private <T> T copyOf(T el) {
         if (el == null) {
@@ -159,23 +235,91 @@ final class LockingTransaction extends AbstractTransaction {
 
         if (el instanceof Vertex) {
             Vertex v = (Vertex) el;
-            return (T) new DetachedVertex(v.id(), v.label(),
-                    (Map<String, Object>) (Map) ElementHelper.vertexPropertyMap(v));
+            return (T) DetachedFactory.detach(v, true);
         } else if (el instanceof Edge) {
             Edge e = (Edge) el;
-            Pair<Object, String> outV = new Pair<>(e.outVertex().id(), e.outVertex().label());
-            Pair<Object, String> inV = new Pair<>(e.inVertex().id(), e.inVertex().label());
-
-            return (T) new DetachedEdge(e.id(), e.label(), ElementHelper.propertyValueMap(e), outV, inV);
+            return (T) DetachedFactory.detach(e, true);
         } else if (el instanceof Property) {
             Property<?> p = (Property<?>) el;
-
             return (T) (p.isPresent() && p.value() != null
-                    ? new DetachedProperty<>(p.key(), p.value(), p.element())
+                    ? DetachedFactory.detach(p)
                     : null);
         }
 
         return el;
+    }
+
+    private void applyMutations(List<MutationEvent> mutations) {
+        for (MutationEvent ev : mutations) {
+            Log.LOG.debugf("Applying mutation of %s to %s", ev.oldValue, ev.newValue);
+
+            if (ev.isVertex()) {
+                if (ev.oldValue == null) {
+                    //create
+                    Vertex v = (Vertex) ev.newValue;
+                    graph.getBaseGraph().addVertex(keyValues(v));
+                } else {
+                    //delete
+                    Vertex inGraph = graph.getBaseGraph().vertices(((Vertex) ev.oldValue).id()).next();
+                    inGraph.remove();
+                }
+            } else if (ev.isEdge()) {
+                if (ev.oldValue == null) {
+                    //create
+                    Edge edge = (Edge) ev.newValue;
+                    Vertex oldSource = edge.outVertex();
+                    Vertex oldTarget = edge.inVertex();
+
+                    //find the source and target in the current graph
+                    Vertex newSource = nextOrNull(graph.vertices(oldSource.id()));
+                    Vertex newTarget = nextOrNull(graph.vertices(oldTarget.id()));
+
+                    if (newSource == null || newTarget == null) {
+                        throw new IllegalStateException("Could not create an edge during commit compaction due to" +
+                                " missing vertices in the current graph: " + edge);
+                    }
+
+                    newSource.addEdge(edge.label(), newTarget, keyValues(edge));
+                } else {
+                    //delete
+                    Edge inGraph = graph.getBaseGraph().edges(((Edge) ev.newValue).id()).next();
+                    inGraph.remove();
+                }
+            } else if (ev.isProperty()) {
+                Property<?> oldP = (Property<?>) ev.oldValue;
+                Property<?> newP = (Property<?>) ev.newValue;
+
+                boolean oldPresent = oldP != null && oldP.value() != null;
+                boolean newPresent = newP != null && newP.value() != null;
+
+                Element oldE = null;
+                Element newE = null;
+                if (oldPresent) {
+                    oldE = oldP.element() instanceof Vertex
+                            ? graph.getBaseGraph().vertices(oldP.element().id()).next()
+                            : graph.getBaseGraph().edges(oldP.element().id()).next();
+                }
+
+                if (newPresent) {
+                    newE = newP.element() instanceof Vertex
+                            ? graph.getBaseGraph().vertices(newP.element().id()).next()
+                            : graph.getBaseGraph().edges(newP.element().id()).next();
+                }
+
+                if (oldPresent) {
+                    if (newPresent) {
+                        //update
+                        newE.property(oldP.key(), newP.value());
+                    } else {
+                        //delete
+                        oldE.property(oldP.key()).remove();
+                    }
+                } else if (newPresent) {
+                    //create
+                    newE.property(newP.key(), newP.value());
+                }
+            }
+        }
     }
 
     private void revertMutations() {
@@ -264,7 +408,7 @@ final class LockingTransaction extends AbstractTransaction {
         return it.hasNext() ? it.next() : null;
     }
 
-    private static final class MutationEvent {
+    private static final class MutationEvent implements Serializable {
         final Object oldValue;
         final Object newValue;
 
@@ -273,15 +417,15 @@ final class LockingTransaction extends AbstractTransaction {
             this.newValue = newValue;
         }
 
-        public boolean isVertex() {
+        boolean isVertex() {
             return oldValue instanceof Vertex || newValue instanceof Vertex;
         }
 
-        public boolean isEdge() {
+        boolean isEdge() {
             return oldValue instanceof Edge || newValue instanceof Edge;
         }
 
-        public boolean isProperty() {
+        boolean isProperty() {
             return oldValue instanceof Property || newValue instanceof Property;
         }
 
@@ -298,6 +442,7 @@ final class LockingTransaction extends AbstractTransaction {
                 return false;
             }
 
+            //noinspection RedundantIfStatement
             if ((newValue != null && (that.newValue == null || !newValue.equals(that.newValue)))
                     || (newValue == null && that.newValue != null)) {
                 return false;

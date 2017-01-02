@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
  */
 package org.hawkular.inventory.impl.tinkerpop.provider;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,13 +32,6 @@ import org.hawkular.inventory.impl.tinkerpop.spi.IndexSpec;
  */
 public final class TinkerGraphProvider implements GraphProvider {
 
-    private final boolean prefersBigTxs;
-
-    public TinkerGraphProvider() {
-        String val = System.getProperty("TinkerGraphProvider.prefersBigTxs");
-        prefersBigTxs = val == null || Boolean.parseBoolean(val);
-    }
-
     @Override public boolean isUniqueIndexSupported() {
         return false;
     }
@@ -47,9 +41,7 @@ public final class TinkerGraphProvider implements GraphProvider {
     }
 
     @Override public boolean isPreferringBigTransactions() {
-        //just for testing purposes... Otherwise tinkergraph doesn't actually care about this because it doesn't
-        //support transactions anyway.
-        return prefersBigTxs;
+        return true;
     }
 
     @Override public boolean isTransactionRetryWarranted(Graph graph, Throwable t) {
@@ -59,8 +51,7 @@ public final class TinkerGraphProvider implements GraphProvider {
     @Override
     public TransactionLockingGraph instantiateGraph(Configuration configuration) {
         return new TransactionLockingGraph(new MapConfiguration(
-                configuration.getImplementationConfiguration(
-                        Collections.singleton(PropertyKey.DIRECTORY_NAME))));
+                configuration.getImplementationConfiguration(Arrays.asList(PropertyKey.values()))));
     }
 
     @Override
@@ -68,8 +59,12 @@ public final class TinkerGraphProvider implements GraphProvider {
         //don't bother with this for a demo graph
     }
 
-    private enum PropertyKey implements Configuration.Property {
-        DIRECTORY_NAME("blueprints.tg.directory", "blueprints.tg.directory", null);
+    @SuppressWarnings("unused")
+    enum PropertyKey implements Configuration.Property {
+        LOCATION("hawkular.inventory.tinkerpop.data.location", "hawkular.inventory.tinkerpop.data.location", null),
+        COMPACTION_INTERVAL("hawkular.inventory.tinkerpop.compactionInterval",
+                "hawkular.inventory.tinkerpop.compactionInterval", null)
+        ;
 
         private final String propertyName;
         private final List<String> sysPropName;
